@@ -33,7 +33,7 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 			</div>
 			<HeroCredit
 				credit={HERO_CREDIT}
-				className="absolute right-4 bottom-[4.5rem] sm:right-6 sm:bottom-[6.75rem] xl:bottom-3 xl:max-w-[calc((100vw-42rem)/2-2.5rem)] xl:text-right"
+				className="absolute right-4 bottom-[4.5rem] sm:right-6 sm:bottom-[6.75rem] xl:bottom-3 xl:text-right"
 			/>
 		</div>
 	);
@@ -42,11 +42,12 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 export function HeroCredit({ credit, className }: { credit: HeroCreditData; className?: string }) {
 	if (!credit.photographer && !credit.source) return null;
 	const text = credit.line ?? [credit.photographer && `Photo: ${credit.photographer}`, credit.source].filter(Boolean).join(" · ");
-	// Wrap only between "source / photographer", never inside a name.
+	// Wrap only between "source / photographer", never inside a name. Beside the form (xl), always two
+	// lines: source, then photographer, without the slash.
 	const body = text.split(" / ").map((part, i, all) => (
-		<span key={part} className="whitespace-nowrap">
+		<span key={part} className="whitespace-nowrap xl:block">
 			{part}
-			{i < all.length - 1 && " / "}
+			{i < all.length - 1 && <span className="xl:hidden"> / </span>}
 		</span>
 	));
 	return (
