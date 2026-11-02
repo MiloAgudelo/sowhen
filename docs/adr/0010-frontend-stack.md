@@ -28,6 +28,16 @@ drag-to-paint grid with two brushes, touch support and local-time labels.
 - **A meta-framework (Next/vinext, Remix).** More than two screens need. SSR isn't required: the Worker
   can inject the few tags that matter.
 
+## Amendment (2026-11-02): bundle size
+
+The first build was 533 kB of JavaScript (170 kB gzipped). Two changes:
+
+- **Temporal is loaded only where it's missing.** Domain code reads `Temporal` through one small
+  module. In the browser, `main.tsx` checks `globalThis.Temporal` and only imports the polyfill when the
+  browser lacks it, before rendering. Chrome, Edge and Firefox ship Temporal natively; Safari may not
+  yet. The Worker and unit tests keep the polyfill installed explicitly.
+- **Pages are split.** Create, event, admin and privacy pages load as separate chunks.
+
 ## Consequences
 
 - shadcn components are copied into the repo and themed with the WSJ 2027 palette (ADR 0011).

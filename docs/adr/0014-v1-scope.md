@@ -23,6 +23,6 @@
 ## Later
 
 - Recurring weekly mode (ADR 0002).
-- Open Graph previews for Slack.
+- ~~Open Graph previews for Slack.~~ Brought into scope by ADR 0015.
 - Spanish and Polish UI.
 - Durable Objects live updates.
