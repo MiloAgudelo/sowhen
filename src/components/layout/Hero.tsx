@@ -33,7 +33,7 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 			</div>
 			<HeroCredit
 				credit={HERO_CREDIT}
-				className="absolute right-4 bottom-[4.5rem] sm:right-6 sm:bottom-[6.75rem] xl:bottom-3 xl:text-right"
+				className="absolute right-4 bottom-[4.5rem] sm:right-6 sm:bottom-[6.75rem] min-[75rem]:bottom-3 min-[75rem]:max-w-[calc((100vw-42rem)/2-2.5rem)] min-[75rem]:text-right"
 			/>
 		</div>
 	);
@@ -42,12 +42,12 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 export function HeroCredit({ credit, className }: { credit: HeroCreditData; className?: string }) {
 	if (!credit.photographer && !credit.source) return null;
 	const text = credit.line ?? [credit.photographer && `Photo: ${credit.photographer}`, credit.source].filter(Boolean).join(" · ");
-	// Wrap only between "source / photographer", never inside a name. Beside the form (xl), always two
-	// lines: source, then photographer, without the slash.
+	// Wrap only between "source / photographer", never inside a name. Beside the form (from 75rem = 1200px, i.e.
+	// 1920px screens at 150% scaling), always two lines: source, then photographer, without the slash.
 	const body = text.split(" / ").map((part, i, all) => (
-		<span key={part} className="whitespace-nowrap xl:block">
+		<span key={part} className="whitespace-nowrap min-[75rem]:block min-[75rem]:whitespace-normal">
 			{part}
-			{i < all.length - 1 && <span className="xl:hidden"> / </span>}
+			{i < all.length - 1 && <span className="min-[75rem]:hidden"> / </span>}
 		</span>
 	));
 	return (
