@@ -21,7 +21,7 @@ const gridDemoModules = import.meta.env.DEV
 	? import.meta.glob<{ GridDemo?: ComponentType; default?: ComponentType }>("./components/grid/GridDemo.tsx")
 	: {};
 const gridDemoLoader = Object.values(gridDemoModules)[0];
-const GridDemo = gridDemoLoader
+const GridDemo = import.meta.env.DEV && gridDemoLoader
 	? lazy(async () => {
 			const m = await gridDemoLoader();
 			const C = m.GridDemo ?? m.default;
