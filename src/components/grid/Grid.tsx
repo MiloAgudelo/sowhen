@@ -83,9 +83,9 @@ export interface GridProps {
 }
 
 const EMPTY: Selection = { available: new Set(), ifNeeded: new Set() };
-const PRIMARY = "var(--color-primary, #5d2f88)";
+const PRIMARY = "var(--color-primary, #d6303c)";
 const SURFACE = "var(--color-background, #ffffff)";
-const INK = "#1f1030";
+const INK = "#26181a";
 const GUTTER = "4.5rem";
 const COL_MIN = "3.25rem";
 const SEP = "0.5rem";
@@ -572,7 +572,7 @@ export function Grid(props: GridProps): React.JSX.Element {
 							"pointer-events-none absolute z-[5] hidden rounded-[3px] border-2",
 							"data-[target=available]:border-primary data-[target=available]:bg-primary/35",
 							"data-[target=ifNeeded]:border-primary data-[target=ifNeeded]:bg-[repeating-linear-gradient(135deg,rgb(93_47_136/0.45)_0_3px,rgb(93_47_136/0.12)_3px_7px)]",
-							"data-[target=unavailable]:border-dashed data-[target=unavailable]:border-[#1f1030] data-[target=unavailable]:bg-[var(--color-background,#fff)]/60",
+							"data-[target=unavailable]:border-dashed data-[target=unavailable]:border-[#26181a] data-[target=unavailable]:bg-[var(--color-background,#fff)]/60",
 						)}
 					/>
 				</div>
@@ -776,7 +776,7 @@ const Cell = memo(function Cell(p: CellProps) {
 				"scroll-mt-14 scroll-ml-[4.5rem] [-webkit-touch-callout:none]",
 				p.paint ? "cursor-pointer touch-none" : "cursor-default",
 				"motion-safe:transition-[background-color] motion-safe:duration-150",
-				"focus-visible:z-[6] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#1f1030] focus-visible:[box-shadow:inset_0_0_0_4px_#fff]",
+				"focus-visible:z-[6] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#26181a] focus-visible:[box-shadow:inset_0_0_0_4px_#fff]",
 			)}
 			style={{
 				gridColumn: p.track,
@@ -876,9 +876,9 @@ export function BrushPicker(props: BrushPickerProps): React.JSX.Element {
 						onClick={() => onChange(b.brush)}
 						className={cn(
 							"inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium",
-							"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1030]",
+							"focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#26181a]",
 							"motion-safe:transition-colors",
-							checked ? "bg-primary text-white" : "text-[#1f1030] hover:bg-primary/10",
+							checked ? "bg-primary text-white" : "text-[#26181a] hover:bg-primary/10",
 						)}
 					>
 						<Swatch brush={b.brush} onDark={checked} />

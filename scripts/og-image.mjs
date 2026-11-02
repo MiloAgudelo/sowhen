@@ -1,4 +1,4 @@
-// Renders the link-preview image public/og/sowhen.png (ADR 0015): the hero photo under a violet
+// Renders the link-preview image public/og/sowhen.png (ADR 0015): the hero photo under a red
 // overlay with the wordmark, tagline and domain, at exactly 1200×630.
 //
 //   node scripts/og-image.mjs [output.png]
@@ -32,7 +32,7 @@ const mark = (() => {
 			const on = (c === 1 && r > 0) || (c === 2 && r === 1);
 			cells.push(`<rect x="${5.5 + c * 6}" y="${5.5 + r * 6}" width="5" height="5" rx="1.4" fill="${on ? "#fff" : "rgba(255,255,255,0.3)"}"/>`);
 		}
-	return `<svg viewBox="0 0 28 28" width="84" height="84"><rect x="1" y="1" width="26" height="26" rx="7" fill="#5D2F88" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>${cells.join("")}</svg>`;
+	return `<svg viewBox="0 0 28 28" width="84" height="84"><rect x="1" y="1" width="26" height="26" rx="7" fill="#D6303C" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>${cells.join("")}</svg>`;
 })();
 
 const html = `<!doctype html>
@@ -40,19 +40,19 @@ const html = `<!doctype html>
 @font-face { font-family: Outfit; src: url(/outfit.woff2) format("woff2"); font-weight: 100 900; }
 * { margin: 0; box-sizing: border-box; }
 html, body { width: 1200px; height: 630px; overflow: hidden; }
-body { position: relative; font-family: Outfit, sans-serif; color: #fff; background: #221034; }
+body { position: relative; font-family: Outfit, sans-serif; color: #fff; background: #430c12; }
 .photo { position: absolute; inset: 0; background: url(/hero.jpg) center 40% / cover no-repeat; filter: grayscale(0.35) blur(1.5px); transform: scale(1.02); }
-/* Violet overlay (ADR 0011, #5D2F88 family): denser on the left, where the text sits. */
+/* Red overlay (ADR 0011, #D6303C family): denser on the left, where the text sits. */
 .tint { position: absolute; inset: 0;
   background:
-    linear-gradient(100deg, rgba(34,16,52,0.94) 0%, rgba(53,26,81,0.86) 38%, rgba(93,47,136,0.62) 70%, rgba(93,47,136,0.5) 100%),
-    linear-gradient(0deg, rgba(34,16,52,0.55) 0%, rgba(34,16,52,0) 45%); }
+    linear-gradient(100deg, rgba(67,12,18,0.92) 0%, rgba(145,29,39,0.82) 38%, rgba(214,48,60,0.55) 70%, rgba(214,48,60,0.42) 100%),
+    linear-gradient(0deg, rgba(67,12,18,0.55) 0%, rgba(67,12,18,0) 45%); }
 .content { position: absolute; left: 88px; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 30px; }
 .brand { display: flex; align-items: center; gap: 26px; }
 .word { font-size: 132px; font-weight: 650; letter-spacing: -0.035em; line-height: 1; }
-.word span { color: #d9c7e9; }
+.word span { color: #f6c9cd; }
 .tagline { font-size: 52px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.1; max-width: 760px; }
-.domain { position: absolute; left: 88px; bottom: 56px; font-size: 30px; font-weight: 500; color: #ece3f4; letter-spacing: 0.01em; }
+.domain { position: absolute; left: 88px; bottom: 56px; font-size: 30px; font-weight: 500; color: #fbe4e6; letter-spacing: 0.01em; }
 .credit { position: absolute; right: 28px; bottom: 22px; font-size: 15px; color: rgba(255,255,255,0.72); }
 </style></head><body>
 <div class="photo"></div><div class="tint"></div>

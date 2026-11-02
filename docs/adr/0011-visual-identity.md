@@ -25,8 +25,8 @@ Source: WOSM brand site, Events → World Scout Jamboree → 26th World Scout Ja
 | Orange | `#EF7D00` | 239, 125, 0 |
 | Pink | `#E58795` | 229, 135, 149 |
 
-- **Violet** is sowhen's primary colour. This is a design choice, not a ranking taken from the guide.
-- The **heatmap** uses a single-hue violet ramp, so it reads by lightness and works for colour-blind
+- **Red** is sowhen's primary colour (amended 2026-11-02; it was violet). This is a design choice, not a ranking taken from the guide.
+- The **heatmap** uses a single-hue ramp of the primary colour, so it reads by lightness and works for colour-blind
   viewers. "If needed" is shown lighter or hatched, never by hue alone.
 - The other colours are decoration only (patterns, accents, illustrations), as the brand guide intends.
   All text and UI states must meet WCAG AA contrast; several palette colours (green, orange, pink, blue)
@@ -61,3 +61,11 @@ arms over each other's shoulders, facing national flags and the Alps at Kanderst
 Centre (no faces, many flags). The library's legal notice allows non-commercial use with credit. The
 credit shown is the asset's own copyright notice: **© Kandersteg International Scout Centre / Leonor Moura**
 (`src/lib/hero.ts`).
+
+## Amendment (2026-11-02): red instead of violet
+
+Camilo asked for red, the colour people associate with the Jamboree. The primary colour is now brand
+red `#D6303C` (white text on it is 4.8:1, AA), with a single-hue red ramp for tints, the home-page
+overlay, the heatmap and the link-preview image. Neutrals moved from a violet tint to a warm one.
+Destructive actions use a darker crimson (`#9B1824`) so a delete button doesn't look like a primary
+one; they are also labelled and confirmed. Violet stays in the palette as decoration only.

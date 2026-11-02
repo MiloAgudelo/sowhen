@@ -18,7 +18,7 @@ Worker for this reason.
   (`/assets/*`, `/hero/*`, `/og/*`, fonts, favicon) keep going straight to the asset server.
 - **Every page:** `og:site_name` "sowhen", `og:type`, `og:url` (canonical `https://sowhen.uk/...`),
   `og:image` + `twitter:card=summary_large_image` pointing at one **static, branded image**
-  `/og/sowhen.png` (1200×630, the hero photo under a violet overlay with the wordmark and tagline),
+  `/og/sowhen.png` (1200×630, the hero photo under a red overlay with the wordmark and tagline),
   plus `og:image:alt`.
 - **Event pages:** `og:title` = the event title; `og:description` = the dates in the creator zone and
   how many people have answered, e.g. "Tue 10 – Fri 14 Nov (Warsaw time) · 4 people have answered ·

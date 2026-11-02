@@ -25,7 +25,7 @@ export function Wordmark({ className, inverted = false }: { className?: string; 
 export function MarkIcon({ className }: { className?: string }) {
 	return (
 		<svg viewBox="0 0 28 28" aria-hidden className={className}>
-			<rect x="1" y="1" width="26" height="26" rx="7" fill="var(--brand-700)" />
+			<rect x="1" y="1" width="26" height="26" rx="7" fill="var(--brand-600)" />
 			{[0, 1, 2].map((c) =>
 				[0, 1, 2].map((r) => {
 					const on = (c === 1 && r > 0) || (c === 2 && r === 1);

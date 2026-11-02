@@ -1,5 +1,5 @@
 // Home-page photo band (ADR 0011). The photo (public/hero/hero.{avif,webp,jpg}) is the background of a
-// full-width band under a violet overlay, like the link-preview image (ADR 0015). The header and the
+// full-width band under a red overlay, like the link-preview image (ADR 0015). The header and the
 // intro sit on it in white; the page content overlaps its bottom edge (PageShell `hero`).
 // Never used on the event page.
 import { type ReactNode, useState } from "react";
@@ -24,11 +24,13 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 					/>
 				</picture>
 			)}
-			{/* Violet overlay: dense on the text side, lighter over the people. */}
+			{/* Red overlay: dense on the text side, lighter over the people. */}
 			<div
 				aria-hidden
-				className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,color-mix(in_oklab,var(--brand-950)_92%,transparent)_0%,color-mix(in_oklab,var(--brand-800)_78%,transparent)_45%,color-mix(in_oklab,var(--brand-700)_45%,transparent)_100%)]"
+				className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,color-mix(in_oklab,var(--brand-950)_90%,transparent)_0%,color-mix(in_oklab,var(--brand-800)_72%,transparent)_45%,color-mix(in_oklab,var(--brand-600)_40%,transparent)_100%)]"
 			/>
+			{/* Phones: the text spans the full width, so darken the light right-hand side too. */}
+			<div aria-hidden className="absolute inset-0 -z-10 bg-brand-950/45 sm:hidden" />
 			<div
 				aria-hidden
 				className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-brand-950/50 to-transparent"
