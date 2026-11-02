@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Theme tokens are finalised by agent D from ADR 0011 (WSJ 2027 palette). */
+@theme {
+	--color-primary: #5d2f88;
+	--color-muted-foreground: #5b5566;
+}
