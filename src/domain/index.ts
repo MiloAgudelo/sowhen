@@ -14,6 +14,9 @@ export {
 	type SlotLabel,
 } from "./display";
 
+// ---- Canonical zone names (ADR 0016)
+export { canonicalZone, ZONE_ALIASES } from "./zones";
+
 // ---- Names (ADR 0005)
 export { cleanDisplayName, MAX_DISPLAY_NAME, normaliseName } from "./names";
 

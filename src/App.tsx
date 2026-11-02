@@ -4,17 +4,38 @@
 //   /<slug>           → event page
 //   /<slug>/admin     → admin page (secret in the URL fragment, ADR 0007)
 //   /__grid           → GridDemo, dev only, when src/components/grid/GridDemo.tsx exists
-import { Component, type ComponentType, type ErrorInfo, lazy, type ReactNode, Suspense, useMemo } from "react";
+import { Component, type ComponentType, type ErrorInfo, lazy, type ReactNode, Suspense, useDeferredValue, useMemo } from "react";
 import { PageShell } from "@/components/layout/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { parseRoute, usePathname } from "@/lib/route";
-import { AdminPage } from "@/pages/AdminPage";
-import { CreatePage } from "@/pages/CreatePage";
-import { EventPage } from "@/pages/EventPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { PrivacyPage } from "@/pages/PrivacyPage";
+
+// Each page is its own chunk (ADR 0010, amendment "bundle size"). NotFoundPage is tiny and stays in
+// the entry chunk. import() is cached, so preloading and lazy() share one request.
+const pageLoaders = {
+	create: () => import("@/pages/CreatePage").then((m) => ({ default: m.CreatePage })),
+	privacy: () => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })),
+	event: () => import("@/pages/EventPage").then((m) => ({ default: m.EventPage })),
+	admin: () => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })),
+};
+
+const CreatePage = lazy(pageLoaders.create);
+const PrivacyPage = lazy(pageLoaders.privacy);
+const EventPage = lazy(pageLoaders.event);
+const AdminPage = lazy(pageLoaders.admin);
+
+/** Starts fetching the current route's page chunk early (main.tsx calls it before loading Temporal). */
+export function preloadPage(pathname: string): void {
+	const name = parseRoute(pathname).name;
+	if (name in pageLoaders) void pageLoaders[name as keyof typeof pageLoaders]().catch(() => {});
+}
+
+/** While a page chunk loads: the same header and footer every page has, with an empty main. No spinner. */
+function PageFallback() {
+	return <PageShell>{null}</PageShell>;
+}
 
 // Optional dev-only grid playground. import.meta.glob returns {} when the file doesn't exist.
 const gridDemoModules = import.meta.env.DEV
@@ -30,7 +51,9 @@ const GridDemo = import.meta.env.DEV && gridDemoLoader
 	: null;
 
 export function App() {
-	const pathname = usePathname();
+	// Deferred so that on client-side navigation the current page stays up while the next page's
+	// chunk loads, instead of flashing the Suspense fallback.
+	const pathname = useDeferredValue(usePathname());
 	const route = useMemo(() => parseRoute(pathname), [pathname]);
 
 	let page: ReactNode;
@@ -68,7 +91,9 @@ export function App() {
 			>
 				Skip to content
 			</a>
-			<ErrorBoundary key={pathname}>{page}</ErrorBoundary>
+			<ErrorBoundary key={pathname}>
+				<Suspense fallback={<PageFallback />}>{page}</Suspense>
+			</ErrorBoundary>
 			<Toaster />
 		</TooltipProvider>
 	);

@@ -1,5 +1,6 @@
 // The JSON API, exactly as specified in src/shared/api.ts. No framework: a small segment router.
 // Kept free of `cloudflare:workers` so it can be unit-tested in Node with a fake D1.
+import "temporal-polyfill/global"; // domain reads globalThis.Temporal (src/domain/temporal.ts); no-op where native
 import { generateColumns, lastSlotEnd, normaliseName, slugify, validateSlug } from "@/domain";
 import {
 	ADMIN_HEADER,

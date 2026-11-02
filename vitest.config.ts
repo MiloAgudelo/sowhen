@@ -10,5 +10,7 @@ export default defineConfig({
 	test: {
 		include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
 		environment: "node",
+		// Domain code reads globalThis.Temporal (src/domain/temporal.ts); install the polyfill as the Worker does.
+		setupFiles: ["src/test-setup.ts"],
 	},
 });

@@ -1,8 +1,8 @@
 // Display in the viewer zone (ADR 0003).
 
-import { Temporal } from "temporal-polyfill";
 import type { Column, IsoDate, SlotId, ZoneId } from "@/shared/types";
 import { allSlots, slotToZoned } from "./slots";
+import { temporal } from "./temporal";
 
 export interface SlotLabel {
 	/** "HH:MM" in the viewer zone, 24-hour. */
@@ -26,7 +26,7 @@ export function labelSlot(slot: SlotId, viewerZone: ZoneId, columnDate: IsoDate)
 	const date = zdt.toPlainDate();
 	return {
 		time: `${pad(zdt.hour)}:${pad(zdt.minute)}`,
-		dayOffset: Temporal.PlainDate.from(columnDate).until(date).days,
+		dayOffset: temporal().PlainDate.from(columnDate).until(date).days,
 		date: date.toString(),
 	};
 }

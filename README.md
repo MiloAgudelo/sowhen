@@ -21,6 +21,8 @@ pnpm dev                                       # cf dev (Vite); prints the local
   migrations command after adding a migration. To start from an empty database, stop the dev server
   and delete `.cloudflare/state`.
 
+- Link-preview image `public/og/sowhen.png` (ADR 0015): regenerate with `node scripts/og-image.mjs`.
+
 ## Deploy
 
 This folder is bound to the `Milo-Agudelo` cf profile (`cf auth activate Milo-Agudelo`); check with

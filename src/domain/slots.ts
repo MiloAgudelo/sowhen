@@ -1,6 +1,5 @@
 // Slot generation (ADR 0001). Slots are UTC epoch minutes; wall times live in the creator zone.
 
-import { Temporal } from "temporal-polyfill";
 import {
 	type Column,
 	type DailyWindow,
@@ -9,6 +8,7 @@ import {
 	type SlotId,
 	type ZoneId,
 } from "@/shared/types";
+import { type Temporal, temporal } from "./temporal";
 
 const WALL_TIME = /^([01]\d|2[0-3]):(00|30)$/;
 
@@ -26,7 +26,7 @@ export function toSlotId(zdt: Temporal.ZonedDateTime): SlotId {
 
 /** The slot's start instant in a zone. */
 export function slotToZoned(slot: SlotId, zone: ZoneId): Temporal.ZonedDateTime {
-	return Temporal.Instant.fromEpochMilliseconds(slot * 60_000).toZonedDateTimeISO(zone);
+	return temporal().Instant.fromEpochMilliseconds(slot * 60_000).toZonedDateTimeISO(zone);
 }
 
 /**
@@ -63,7 +63,7 @@ export function generateColumns(input: { dates: IsoDate[]; window: DailyWindow; 
 	const steps = lengthMin / SLOT_MINUTES;
 
 	return input.dates.map((date) => {
-		const first = Temporal.PlainDate.from(date).toPlainDateTime({
+		const first = temporal().PlainDate.from(date).toPlainDateTime({
 			hour: Math.floor(startMin / 60),
 			minute: startMin % 60,
 		});

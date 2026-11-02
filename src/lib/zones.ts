@@ -1,9 +1,14 @@
 // Time-zone helpers for the UI. Offset formatting and slot maths live in src/domain.
+// Zone names are canonicalised as they're read (ADR 0016): Chromium reports old IANA names.
+import { canonicalZone } from "@/domain/zones";
 import type { SlotId, ZoneId } from "@/shared/types";
 
+export { canonicalZone };
+
+/** The browser's zone under its current IANA name ("Asia/Katmandu" → "Asia/Kathmandu"). */
 export function browserZone(): ZoneId {
 	try {
-		return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+		return canonicalZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
 	} catch {
 		return "UTC";
 	}
@@ -19,7 +24,10 @@ export function isValidZone(zone: string): boolean {
 }
 
 let cachedZones: ZoneId[] | null = null;
-/** Every IANA zone the browser knows, plus the browser's own zone (it can be an alias missing from the list). */
+/**
+ * Every IANA zone the browser knows, under current names (Chromium lists "Asia/Calcutta" and
+ * friends), plus the browser's own zone.
+ */
 export function allZones(): ZoneId[] {
 	if (!cachedZones) {
 		let list: string[] = [];
@@ -28,7 +36,7 @@ export function allZones(): ZoneId[] {
 		} catch {
 			list = [];
 		}
-		const set = new Set(list);
+		const set = new Set(list.map(canonicalZone));
 		set.add(browserZone());
 		set.add("UTC");
 		cachedZones = [...set].sort();
@@ -54,38 +62,28 @@ const CITY_OVERRIDES: Record<string, string> = {
 	"Europe/Zurich": "Zürich",
 	"Europe/Chisinau": "Chișinău",
 	"Asia/Ho_Chi_Minh": "Ho Chi Minh City",
-	"Asia/Kolkata": "Kolkata",
-	"Asia/Calcutta": "Kolkata",
-	// Chromium's ICU lists (and resolves the browser zone to) the old IANA names of these zones.
-	// Show and search them by today's city name.
-	"Asia/Katmandu": "Kathmandu",
-	"Asia/Saigon": "Ho Chi Minh City",
-	"Asia/Rangoon": "Yangon",
-	"Europe/Kiev": "Kyiv",
-	"America/Godthab": "Nuuk",
-	"Asia/Ulan_Bator": "Ulaanbaatar",
-	"Atlantic/Faeroe": "Faroe",
-	"Pacific/Truk": "Chuuk",
-	"Pacific/Ponape": "Pohnpei",
 	"Atlantic/Reykjavik": "Reykjavík",
 	"Africa/Lome": "Lomé",
 	"Africa/Sao_Tome": "São Tomé",
 	"Pacific/Noumea": "Nouméa",
 	UTC: "UTC",
-	"Etc/UTC": "UTC",
 };
 
-/** Short human name for a zone: "Europe/Warsaw" → "Warsaw", "America/Bogota" → "Bogotá". */
+/**
+ * Short human name for a zone: "Europe/Warsaw" → "Warsaw", "America/Bogota" → "Bogotá".
+ * Old names show the current city: "Europe/Kiev" → "Kyiv", "US/Eastern" → "New York".
+ */
 export function zoneCity(zone: ZoneId): string {
-	const o = CITY_OVERRIDES[zone];
+	const z = canonicalZone(zone);
+	const o = CITY_OVERRIDES[z];
 	if (o) return o;
-	const last = zone.split("/").pop() ?? zone;
+	const last = z.split("/").pop() ?? z;
 	return last.replace(/_/g, " ");
 }
 
 /** Region prefix, e.g. "Europe", "America/Argentina". */
 export function zoneRegion(zone: ZoneId): string {
-	const parts = zone.split("/");
+	const parts = canonicalZone(zone).split("/");
 	return parts.slice(0, -1).join("/").replace(/_/g, " ");
 }
 

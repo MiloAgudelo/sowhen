@@ -11,7 +11,16 @@ export default defineConfig({
 		entrypoint,
 		assets: {
 			notFoundHandling: "single-page-application",
-			runWorkerFirst: ["/api/*"],
+			// ADR 0015: the Worker serves page HTML (to inject link-preview tags) and /api/*. Static files
+			// go straight to the asset server and never run the Worker.
+			runWorkerFirst: [
+				"/*",
+				"!/assets/*",
+				"!/hero/*",
+				"!/og/*",
+				"!/favicon.svg",
+				"!/robots.txt",
+			],
 		},
 		env: {
 			// Bound by id only: the local simulation keys a D1 database by its name when one is set,

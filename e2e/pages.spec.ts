@@ -20,10 +20,7 @@ test("an event past its expiry shows the same page, and the daily sweep deletes 
 	await expect(page.getByRole("heading", { name: "This event doesn't exist or has expired" })).toBeVisible();
 	expect((await request.get(`/api/events/${event.slug}`)).status()).toBe(404);
 
-	if (!(await runCron(request))) {
-		test.info().annotations.push({ type: "skipped-part", description: "cf dev couldn't dispatch the cron; sweep covered by unit tests" });
-		return;
-	}
+	await runCron(request);
 	const rows = await localSql(request, "SELECT (SELECT COUNT(*) FROM events WHERE slug = ?1) AS e, (SELECT COUNT(*) FROM responses WHERE event_slug = ?1) AS r", [event.slug]);
 	expect(rows.result[0].results.rows[0]).toEqual([0, 0]);
 	// The slug is free again.

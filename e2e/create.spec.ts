@@ -65,8 +65,8 @@ test("create an event: slug suggestion, zone, non-consecutive dates, midnight wi
 
 	// What the server stored.
 	const snap = await getSnapshot(page.request, slug);
-	// Chromium's zone list has the legacy alias "Asia/Katmandu"; both name the same zone.
-	expect(snap.event.creatorZone).toMatch(/^Asia\/Kath?mandu$/);
+	// Chromium reports the old name "Asia/Katmandu"; the app and the server store the current one (ADR 0016).
+	expect(snap.event.creatorZone).toBe("Asia/Kathmandu");
 	expect(snap.event).toMatchObject({
 		dates,
 		window: { start: "20:00", end: "02:00" },

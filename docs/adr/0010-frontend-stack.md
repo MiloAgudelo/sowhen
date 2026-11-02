@@ -34,8 +34,11 @@ The first build was 533 kB of JavaScript (170 kB gzipped). Two changes:
 
 - **Temporal is loaded only where it's missing.** Domain code reads `Temporal` through one small
   module. In the browser, `main.tsx` checks `globalThis.Temporal` and only imports the polyfill when the
-  browser lacks it, before rendering. Chrome, Edge and Firefox ship Temporal natively; Safari may not
-  yet. The Worker and unit tests keep the polyfill installed explicitly.
+  browser lacks it, before rendering. Chromium 156, Firefox 157 and WebKit 27.2 (Playwright's engines,
+  checked 2026-11-02) all ship Temporal natively, so current browsers skip the 20 kB (gzip) polyfill;
+  older ones load it as a separate chunk. The Worker and unit tests keep the polyfill installed explicitly.
+- **Result:** first load of `/` went from 170 kB to about 140 kB of gzipped JavaScript. React DOM is
+  now most of what's left.
 - **Pages are split.** Create, event, admin and privacy pages load as separate chunks.
 
 ## Consequences

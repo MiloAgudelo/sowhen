@@ -12,7 +12,8 @@ import {
 	type SlugCheck,
 	VERSION_PARAM,
 } from "@/shared/api";
-import type { EventSnapshot } from "@/shared/types";
+import { canonicalZone } from "@/domain/zones";
+import type { EventDto, EventSnapshot } from "@/shared/types";
 
 export class ApiRequestError extends Error {
 	readonly status: number;
@@ -74,6 +75,15 @@ async function json<T>(res: Response): Promise<T> {
 	return (await res.json()) as T;
 }
 
+/**
+ * Events created before ADR 0016 may store an old zone name ("Asia/Katmandu"). Canonicalise it as
+ * it arrives, so every display path and every zone comparison sees the current name.
+ */
+function withCanonicalZone<T extends { event: EventDto }>(value: T): T {
+	const creatorZone = canonicalZone(value.event.creatorZone);
+	return creatorZone === value.event.creatorZone ? value : { ...value, event: { ...value.event, creatorZone } };
+}
+
 export const api = {
 	/** GET /api/slugs/:slug */
 	async checkSlug(slug: string, signal?: AbortSignal): Promise<SlugCheck> {
@@ -82,7 +92,7 @@ export const api = {
 
 	/** POST /api/events */
 	async createEvent(input: CreateEventInput): Promise<CreateEventResult> {
-		return json(await request("/api/events", { method: "POST", body: input }));
+		return withCanonicalZone(await json<CreateEventResult>(await request("/api/events", { method: "POST", body: input })));
 	},
 
 	/**
@@ -93,7 +103,7 @@ export const api = {
 		const q = version != null ? `?${VERSION_PARAM}=${enc(String(version))}` : "";
 		const res = await request(`/api/events/${enc(slug)}${q}`, { signal });
 		if (res.status === 304) return null;
-		return json(res);
+		return withCanonicalZone(await json<EventSnapshot>(res));
 	},
 
 	/** PUT /api/events/:slug/responses */
@@ -113,7 +123,10 @@ export const api = {
 
 	/** PATCH /api/events/:slug */
 	async patchEvent(slug: string, adminSecret: string, input: PatchEventInput): Promise<PatchEventResult> {
-		return json(await request(`/api/events/${enc(slug)}`, { method: "PATCH", body: input, adminSecret }));
+		const result = await json<PatchEventResult>(
+			await request(`/api/events/${enc(slug)}`, { method: "PATCH", body: input, adminSecret }),
+		);
+		return { ...result, snapshot: withCanonicalZone(result.snapshot) };
 	},
 
 	/** DELETE /api/events/:slug */

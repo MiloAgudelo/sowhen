@@ -26,6 +26,10 @@ export function PrivacyPage() {
 						name. A first name is plenty.
 					</p>
 					<p>Only the person with the admin link can change the event itself or delete it.</p>
+					<p>
+						When an event link is shared in a chat app, its preview can show the event title and dates (never
+						anyone's name), and the chat app may keep its own copy of that preview.
+					</p>
 				</Section>
 
 				<Section title="How long we keep it">

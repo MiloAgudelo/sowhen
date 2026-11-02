@@ -321,20 +321,19 @@ export async function localSql(request: APIRequestContext, sql: string, params: 
 }
 
 /**
- * Fire the Worker's daily cron (ADR 0008 sweep) once through the Local Explorer. Returns false when
- * the explorer refuses with 502 "The owner of Worker is unavailable": cf dev's scheduled dispatch
- * is unreliable on this setup (it fails on a fresh server and works only some of the time), and
- * the sweep itself is unit-tested in src/worker/api.test.ts.
+ * Fire the Worker's daily cron (ADR 0008 sweep) once, on this dev server.
+ *
+ * Uses Miniflare's own trigger route `/cdn-cgi/local/scheduled` (the Cloudflare Vite plugin enables
+ * it in dev and forwards /cdn-cgi/local/* to Miniflare), which calls the `scheduled` handler of the
+ * Worker in the instance that receives the request. Not the Local Explorer's
+ * `/cdn-cgi/local/explorer/api/local/scheduled`: that one looks the Worker up by name in the
+ * machine-wide dev registry, so with another `sowhen` dev server running (or a dead one left in the
+ * registry) it fails with 502 "The owner of Worker is unavailable", or sweeps the other server's D1.
  */
-export async function runCron(request: APIRequestContext): Promise<boolean> {
-	for (let i = 0; i < 3; i++) {
-		const res = await request.post(`${EXPLORER}/local/scheduled?worker=sowhen`, { data: { cron: "17 3 * * *" } });
-		if (res.status() === 200) return true;
-		const body = await res.text();
-		expect(body).toContain("is unavailable");
-		await new Promise((r) => setTimeout(r, 1000));
-	}
-	return false;
+export async function runCron(request: APIRequestContext): Promise<void> {
+	const res = await request.get("/cdn-cgi/local/scheduled", { params: { cron: "17 3 * * *", format: "json" } });
+	expect(res.status(), await res.text()).toBe(200);
+	expect(await res.json()).toMatchObject({ outcome: "ok" });
 }
 
 /** Wait until the page has stopped (smooth-)scrolling, e.g. after the app scrolls the grid into view. */

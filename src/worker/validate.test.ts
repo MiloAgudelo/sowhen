@@ -107,6 +107,13 @@ describe("request bodies", () => {
 		rejects(() => parseCreateInput({ ...create, creatorZone: "Nowhere/Land" }));
 	});
 
+	it("create: stores the current name of an old zone (ADR 0016)", () => {
+		expect(parseCreateInput({ ...create, creatorZone: "Asia/Katmandu" }).creatorZone).toBe("Asia/Kathmandu");
+		expect(parseCreateInput({ ...create, creatorZone: "Europe/Kiev" }).creatorZone).toBe("Europe/Kyiv");
+		expect(parseCreateInput({ ...create, creatorZone: "Etc/UTC" }).creatorZone).toBe("UTC");
+		expect(parseCreateInput(create).creatorZone).toBe("Europe/Warsaw");
+	});
+
 	it("patch: at least one field", () => {
 		expect(parsePatchInput({ title: "New" })).toEqual({ title: "New" });
 		rejects(() => parsePatchInput({}));

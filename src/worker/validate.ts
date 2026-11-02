@@ -1,6 +1,7 @@
 // Server-side input validation (ADR 0004: never trust the form). Pure: no D1, no Workers APIs.
 // Each parser returns a clean value or throws HttpError("bad_request").
 import { cleanDisplayName } from "@/domain";
+import { canonicalZone } from "@/domain/zones";
 import type { CreateEventInput, PatchEventInput, PutResponseInput } from "@/shared/api";
 import {
 	MEETING_DURATIONS,
@@ -90,7 +91,8 @@ export function parseCreateInput(body: Record<string, unknown>): CreateEventInpu
 	return {
 		slug: body.slug,
 		title: parseTitle(body.title),
-		creatorZone: parseZone(body.creatorZone),
+		// ADR 0016: store the current name whatever the browser reported ("Asia/Katmandu" → "Asia/Kathmandu").
+		creatorZone: canonicalZone(parseZone(body.creatorZone)),
 		dates: parseDates(body.dates),
 		window: parseWindow(body.window),
 		durationMinutes: parseDuration(body.durationMinutes ?? 60),

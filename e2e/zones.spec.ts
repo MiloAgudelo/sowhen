@@ -9,7 +9,9 @@ import {
 	getSnapshot,
 	hhmm,
 	isoDate,
+	localSql,
 	newContextIn,
+	putResponse,
 	openEvent,
 	rangeLabel,
 	save,
@@ -170,4 +172,47 @@ test("four people in four zones agree on the best time @smoke", async ({ browser
 		if (zone !== WARSAW) expect(items[0]!.text).toContain("(Warsaw 15:30–16:30)");
 		await page.context().close();
 	}
+});
+
+test.describe("old zone names (ADR 0016)", () => {
+	// Chromium reports this zone as "Asia/Katmandu"; Firefox and WebKit as "Asia/Kathmandu".
+	test.use({ timezoneId: "Asia/Kathmandu" });
+
+	test("the server stores the current name of a zone sent under its old one", async ({ request }) => {
+		const { event } = await createEvent(request, { dates: [DATE], creatorZone: "Europe/Kiev" });
+		expect(event.creatorZone).toBe("Europe/Kyiv");
+		expect((await getSnapshot(request, event.slug)).event.creatorZone).toBe("Europe/Kyiv");
+	});
+
+	test("an event stored with an old name shows current city names everywhere", async ({ page, request }) => {
+		const KYIV = "Europe/Kyiv";
+		const { event } = await createEvent(request, { dates: [DATE], creatorZone: KYIV, durationMinutes: 60 });
+		// Simulate an event created before ADR 0016 by a Chromium in Kyiv. No migration rewrites it.
+		await localSql(request, "UPDATE events SET creator_zone = ? WHERE slug = ?", ["Europe/Kiev", event.slug]);
+		expect((await getSnapshot(request, event.slug)).event.creatorZone).toBe("Europe/Kiev");
+		const from = slotOf(DATE, "10:00", KYIV);
+		await putResponse(request, event.slug, { name: "Oksana", available: [from, from + 30], ifNeeded: [] });
+
+		await openEvent(page, event.slug);
+		// Zone bar: the viewer's own zone and the creator's, by today's city names.
+		await expect(zoneButton(page)).toContainText("Kathmandu (UTC+5:45)");
+		await expect(zoneButton(page)).not.toContainText("Katmandu");
+		await expect(page.getByText("creator zone: Kyiv")).toBeAttached();
+		// Grid corner (viewer city), and the cells' creator-zone tooltip.
+		await expect(page.locator('[role="grid"] [title="Times in Kathmandu"]')).toHaveText("Kathmandu");
+		await expect(page.locator(`[data-slot="${from}"]`)).toHaveAttribute("title", / 10:00 Kyiv$/);
+		// Best times: the creator-zone label.
+		await showResults(page);
+		const items = await bestSlots(page);
+		expect(items[0]!.text).toContain(rangeLabel(from, from + 60, "Asia/Kathmandu"));
+		expect(items[0]!.text).toContain("(Kyiv 10:00–11:00)");
+		await expect(page.getByText(/Kiev|Katmandu/)).toHaveCount(0);
+		// Zone picker: creator zone offered first under its current name; no old names in the list.
+		await zoneButton(page).click();
+		await expect(page.getByRole("option").first()).toContainText("Kyiv");
+		await page.getByLabel("Search time zones").fill("kiev");
+		await expect(page.getByRole("option", { name: /Kiev/ })).toHaveCount(0);
+		await page.getByLabel("Search time zones").fill("katmandu");
+		await expect(page.getByRole("option", { name: /Katmandu/ })).toHaveCount(0);
+	});
 });
