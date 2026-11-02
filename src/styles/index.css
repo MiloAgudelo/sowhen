@@ -1,7 +1,161 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* Theme tokens are finalised by agent D from ADR 0011 (WSJ 2027 palette). */
-@theme {
-	--color-primary: #5d2f88;
-	--color-muted-foreground: #5b5566;
+/* Theme: WSJ 2027 palette (ADR 0011). Violet is primary. Red, green, blue, orange and pink are
+   decoration only, except red, which passes AA on white (brand #D6303C 4.8:1; token below 5.7:1) and is used for destructive text.
+   Green, blue, orange and pink fail AA as text on white: never use them for text. */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	/* Brand palette, as given */
+	--wsj-violet: #5d2f88;
+	--wsj-red: #d6303c;
+	--wsj-green: #87a428;
+	--wsj-blue: #36a1c3;
+	--wsj-orange: #ef7d00;
+	--wsj-pink: #e58795;
+
+	/* Violet lightness ramp (single hue) for the heatmap and tints. 700 is the brand violet. */
+	--brand-50: #f6f2fa;
+	--brand-100: #ece3f4;
+	--brand-200: #d9c7e9;
+	--brand-300: #bd9fd8;
+	--brand-400: #9a72bf;
+	--brand-500: #7b4ea5;
+	--brand-600: #6a3b96;
+	--brand-700: #5d2f88;
+	--brand-800: #4a2570;
+	--brand-900: #351a51;
+	--brand-950: #221034;
+
+	--radius: 0.75rem;
+
+	--background: #fcfbfd;
+	--foreground: #1f1630; /* 16.7:1 on background */
+	--card: #ffffff;
+	--card-foreground: #1f1630;
+	--popover: #ffffff;
+	--popover-foreground: #1f1630;
+	--primary: #5d2f88; /* white text on it: 9.4:1 */
+	--primary-foreground: #ffffff;
+	--secondary: #f1ebf7;
+	--secondary-foreground: #3d1f5a;
+	--muted: #f3f0f6;
+	--muted-foreground: #5b5566; /* 7.1:1 on white, 6.3:1 on muted */
+	--accent: #ece3f4;
+	--accent-foreground: #3d1f5a;
+	--destructive: #c42634; /* 5.7:1 on white, a touch darker than brand red */
+	--destructive-foreground: #ffffff;
+	--border: #e4dfea;
+	--input: #d6cfdf;
+	--ring: #7b4ea5;
+	--success: #4d6416; /* darkened brand green, 6.7:1 on white */
+	--warning-bg: #fff4e5;
+	--warning-foreground: #6b3a00; /* on warning-bg: 8.7:1 */
+}
+
+.dark {
+	--background: #150c21;
+	--foreground: #f3eef8;
+	--card: #1d1230;
+	--card-foreground: #f3eef8;
+	--popover: #1d1230;
+	--popover-foreground: #f3eef8;
+	--primary: #bd9fd8;
+	--primary-foreground: #221034;
+	--secondary: #2b1b42;
+	--secondary-foreground: #f3eef8;
+	--muted: #26183a;
+	--muted-foreground: #bdb3c9;
+	--accent: #2f1d49;
+	--accent-foreground: #f3eef8;
+	--destructive: #ff7a85;
+	--destructive-foreground: #221034;
+	--border: #33244a;
+	--input: #3f2d58;
+	--ring: #9a72bf;
+	--success: #b8d36a;
+	--warning-bg: #3a2400;
+	--warning-foreground: #ffd9a8;
+}
+
+@theme inline {
+	--font-sans: "Outfit Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-success: var(--success);
+	--color-warning-bg: var(--warning-bg);
+	--color-warning-foreground: var(--warning-foreground);
+
+	--color-wsj-violet: var(--wsj-violet);
+	--color-wsj-red: var(--wsj-red);
+	--color-wsj-green: var(--wsj-green);
+	--color-wsj-blue: var(--wsj-blue);
+	--color-wsj-orange: var(--wsj-orange);
+	--color-wsj-pink: var(--wsj-pink);
+
+	--color-brand-50: var(--brand-50);
+	--color-brand-100: var(--brand-100);
+	--color-brand-200: var(--brand-200);
+	--color-brand-300: var(--brand-300);
+	--color-brand-400: var(--brand-400);
+	--color-brand-500: var(--brand-500);
+	--color-brand-600: var(--brand-600);
+	--color-brand-700: var(--brand-700);
+	--color-brand-800: var(--brand-800);
+	--color-brand-900: var(--brand-900);
+	--color-brand-950: var(--brand-950);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		-webkit-text-size-adjust: 100%;
+	}
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		min-height: 100dvh;
+	}
+	#root {
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
+	}
+	:focus-visible {
+		@apply outline-2 outline-offset-2 outline-ring;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
 }
