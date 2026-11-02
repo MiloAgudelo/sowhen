@@ -1,6 +1,7 @@
 // Time-zone helpers for the UI. Offset formatting and slot maths live in src/domain.
 // Zone names are canonicalised as they're read (ADR 0016): Chromium reports old IANA names.
 import { canonicalZone } from "@/domain/zones";
+import { FLAG_COUNTRIES, ZONE_COUNTRY } from "@/lib/zone-countries";
 import type { SlotId, ZoneId } from "@/shared/types";
 
 export { canonicalZone };
@@ -79,6 +80,31 @@ export function zoneCity(zone: ZoneId): string {
 	if (o) return o;
 	const last = z.split("/").pop() ?? z;
 	return last.replace(/_/g, " ");
+}
+
+/** ISO 3166 country code (lower case) of a zone, if it has one and we have its flag: "Europe/Warsaw" → "pl". */
+export function zoneCountry(zone: ZoneId): string | undefined {
+	const cc = ZONE_COUNTRY[canonicalZone(zone)];
+	return cc && FLAG_COUNTRIES.has(cc) ? cc : undefined;
+}
+
+let regionNames: Intl.DisplayNames | null | undefined;
+/** English country name of a zone, "Europe/Warsaw" → "Poland", for search. */
+export function zoneCountryName(zone: ZoneId): string {
+	const cc = ZONE_COUNTRY[canonicalZone(zone)];
+	if (!cc) return "";
+	if (regionNames === undefined) {
+		try {
+			regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+		} catch {
+			regionNames = null;
+		}
+	}
+	try {
+		return regionNames?.of(cc.toUpperCase()) ?? "";
+	} catch {
+		return "";
+	}
 }
 
 /** Region prefix, e.g. "Europe", "America/Argentina". */

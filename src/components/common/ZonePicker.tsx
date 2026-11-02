@@ -1,9 +1,19 @@
 // Searchable IANA time-zone combobox: Popover + input + listbox (cmdk would be a new dependency).
-import { CheckIcon, ChevronsUpDownIcon, GlobeIcon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ZoneFlag } from "@/components/common/ZoneFlag";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { allZones, browserZone, offsetLabel, zoneCity, zoneLongName, zoneOffsetMinutes, zoneRegion } from "@/lib/zones";
+import {
+	allZones,
+	browserZone,
+	offsetLabel,
+	zoneCity,
+	zoneCountryName,
+	zoneLongName,
+	zoneOffsetMinutes,
+	zoneRegion,
+} from "@/lib/zones";
 import type { ZoneId } from "@/shared/types";
 
 interface ZoneOption {
@@ -23,12 +33,13 @@ function zoneOptions(): ZoneOption[] {
 			const offset = zoneOffsetMinutes(zone, now);
 			const long = zoneLongName(zone, now);
 			const off = offsetLabel(offset);
+			const country = zoneCountryName(zone);
 			return {
 				zone,
 				city,
 				region: zoneRegion(zone),
 				offset,
-				haystack: `${zone} ${city} ${long} ${off} ${off.replace("−", "-")}`
+				haystack: `${zone} ${city} ${country} ${long} ${off} ${off.replace("−", "-")}`
 					.toLowerCase()
 					.normalize("NFD")
 					.replace(/[̀-ͯ]/g, ""),
@@ -135,13 +146,14 @@ export function ZonePicker({
 				>
 					{compact ? (
 						<>
+							<ZoneFlag zone={value} className="mr-0.5" />
 							{zoneCity(value)} ({nowOffset})
 							<ChevronsUpDownIcon className="size-3.5 opacity-70" />
 						</>
 					) : (
 						<>
 							<span className="flex min-w-0 items-center gap-2">
-								<GlobeIcon className="size-4 shrink-0 text-muted-foreground" />
+								<ZoneFlag zone={value} />
 								<span className="truncate">
 									{zoneCity(value)} <span className="text-muted-foreground">· {nowOffset}</span>
 								</span>
@@ -197,6 +209,7 @@ export function ZonePicker({
 							)}
 						>
 							<CheckIcon className={cn("size-4 shrink-0", o.zone === value ? "opacity-100" : "opacity-0")} />
+							<ZoneFlag zone={o.zone} />
 							<span className="min-w-0 flex-1 truncate">
 								{o.city}
 								{o.region && <span className="text-muted-foreground"> · {o.region}</span>}

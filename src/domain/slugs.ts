@@ -3,6 +3,8 @@
 export const RESERVED_SLUGS: readonly string[] = [
 	"api", "new", "admin", "assets", "static", "privacy", "about", "help", "terms",
 	"favicon.ico", "robots.txt", "sitemap.xml", "index.html", "_", "health",
+	// Static folders: /<slug>/admin would be served as a file (cloudflare.config.ts runWorkerFirst).
+	"hero", "flags",
 ];
 
 export const SLUG_MIN_LENGTH = 3;

@@ -16,6 +16,7 @@ export default defineConfig({
 			runWorkerFirst: [
 				"/*",
 				"!/assets/*",
+				"!/flags/*",
 				"!/hero/*",
 				"!/og/*",
 				"!/favicon.svg",

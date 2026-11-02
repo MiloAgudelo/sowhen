@@ -45,3 +45,10 @@ Tests: `pnpm test` (Vitest) and `pnpm e2e` (Playwright).
   `vite.config.ts` passes to the Cloudflare plugin (`persistState`) and Vite (`strictPort`). `cf dev`
   itself takes neither flag. Your own `.cloudflare/state` is untouched.
 - First time on a machine: `pnpm exec playwright install chromium firefox webkit`.
+
+## Generated assets
+
+- `node scripts/og-image.mjs`: link-preview image `public/og/sowhen.png` (ADR 0015).
+- `node scripts/flags.mjs`: time-zone flags `public/flags/*.webp` and `src/lib/zone-countries.ts`
+  (ADR 0017). Flags from [flag-icons](https://github.com/lipis/flag-icons) (MIT); zone countries from
+  tzdb `zone.tab`.
