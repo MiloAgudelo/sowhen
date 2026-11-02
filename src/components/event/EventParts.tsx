@@ -34,6 +34,7 @@ export function ZoneBar({
 				value={viewerZone}
 				onChange={onChange}
 				suggested={[creatorZone]}
+				offsetAt={new Date(at * 60_000)}
 				aria-label={`Times shown in ${zoneCity(viewerZone)} (${off}). Change time zone`}
 			/>
 			{viewerZone !== creatorZone && (
@@ -104,6 +105,8 @@ export function BestTimesList({
 						<button
 							type="button"
 							aria-pressed={isSel}
+							data-best-start={b.start}
+							data-best-end={b.end}
 							onClick={() => onSelect(isSel ? null : b)}
 							className={cn(
 								"group grid w-full gap-1 rounded-lg border bg-card px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",

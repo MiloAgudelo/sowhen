@@ -56,6 +56,17 @@ const CITY_OVERRIDES: Record<string, string> = {
 	"Asia/Ho_Chi_Minh": "Ho Chi Minh City",
 	"Asia/Kolkata": "Kolkata",
 	"Asia/Calcutta": "Kolkata",
+	// Chromium's ICU lists (and resolves the browser zone to) the old IANA names of these zones.
+	// Show and search them by today's city name.
+	"Asia/Katmandu": "Kathmandu",
+	"Asia/Saigon": "Ho Chi Minh City",
+	"Asia/Rangoon": "Yangon",
+	"Europe/Kiev": "Kyiv",
+	"America/Godthab": "Nuuk",
+	"Asia/Ulan_Bator": "Ulaanbaatar",
+	"Atlantic/Faeroe": "Faroe",
+	"Pacific/Truk": "Chuuk",
+	"Pacific/Ponape": "Pohnpei",
 	"Atlantic/Reykjavik": "Reykjavík",
 	"Africa/Lome": "Lomé",
 	"Africa/Sao_Tome": "São Tomé",

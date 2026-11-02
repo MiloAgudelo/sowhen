@@ -631,7 +631,8 @@ const GridRow = memo(function GridRow(p: GridRowProps) {
 			>
 				{rowLabel && (
 					<>
-						<span className={cn("pt-0.5", !hourLine && "opacity-60")}>{rowLabel.time}</span>
+						{/* Half-hour labels stay muted; hour labels are darker. No opacity: both must keep AA contrast. */}
+							<span className={cn("pt-0.5", hourLine && "font-medium text-foreground")}>{rowLabel.time}</span>
 						{rowLabel.dayOffset !== 0 && <DayMarker offset={rowLabel.dayOffset} />}
 					</>
 				)}

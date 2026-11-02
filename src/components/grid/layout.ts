@@ -95,11 +95,8 @@ export function formatIsoDate(iso: IsoDate): { weekday: string; dayMonth: string
 	return { weekday, dayMonth, full: `${weekday} ${dayMonth}` };
 }
 
-/** "Bogotá"-style short name from an IANA zone ("America/Bogota" → "Bogota"). */
-export function zoneCity(zone: ZoneId): string {
-	const last = zone.split("/").pop() ?? zone;
-	return last.replace(/_/g, " ");
-}
+/** "Bogotá"-style short name from an IANA zone. One implementation, so the grid and the zone bar agree. */
+export { zoneCity } from "@/lib/zones";
 
 // ---- Row alignment
 

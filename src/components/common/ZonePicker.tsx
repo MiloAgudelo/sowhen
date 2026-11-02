@@ -54,6 +54,8 @@ export interface ZonePickerProps {
 	suggested?: ZoneId[];
 	/** Render the trigger as compact inline text instead of a full-width field. */
 	compact?: boolean;
+	/** Instant whose UTC offset the trigger shows (e.g. the event's first slot). Default: now. */
+	offsetAt?: Date;
 	"aria-label"?: string;
 	"aria-describedby"?: string;
 }
@@ -65,6 +67,7 @@ export function ZonePicker({
 	className,
 	suggested = [],
 	compact = false,
+	offsetAt,
 	...aria
 }: ZonePickerProps) {
 	const [open, setOpen] = useState(false);
@@ -110,7 +113,7 @@ export function ZonePicker({
 		setQuery("");
 	};
 
-	const nowOffset = offsetLabel(zoneOffsetMinutes(value));
+	const nowOffset = offsetLabel(zoneOffsetMinutes(value, offsetAt));
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -125,7 +128,7 @@ export function ZonePicker({
 					{...aria}
 					className={cn(
 						compact
-							? "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+							? "inline-flex min-h-8 items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
 							: "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-left text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40",
 						className,
 					)}
