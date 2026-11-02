@@ -1,6 +1,6 @@
 # 0011. Look like the WSJ 2027 brand, without its logos
 
-- **Status:** accepted (photo credit format to be supplied by Camilo)
+- **Status:** accepted
 - **Date:** 2026-11-01
 
 ## Context
@@ -53,3 +53,11 @@ drawn for sowhen rather than copied from Jamboree artwork.
 
 - shadcn/ui theme tokens are set from this palette (ADR 0010).
 - The footer says "Not an official World Scout Jamboree tool" to avoid implying endorsement.
+
+## Photo chosen (2026-11-02)
+
+`LM_KISCSummer_InternationalEvening_20260719-15` from the WOSM Photo Library: Scouts seen from behind,
+arms over each other's shoulders, facing national flags and the Alps at Kandersteg International Scout
+Centre (no faces, many flags). The library's legal notice allows non-commercial use with credit. The
+credit shown is the asset's own copyright notice: **© Kandersteg International Scout Centre / Leonor Moura**
+(`src/lib/hero.ts`).

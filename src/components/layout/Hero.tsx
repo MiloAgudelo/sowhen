@@ -66,7 +66,7 @@ function GradientArt() {
 
 export function HeroCredit({ credit }: { credit: HeroCreditData }) {
 	if (!credit.photographer && !credit.source) return null;
-	const text = [credit.photographer && `Photo: ${credit.photographer}`, credit.source].filter(Boolean).join(" · ");
+	const text = credit.line ?? [credit.photographer && `Photo: ${credit.photographer}`, credit.source].filter(Boolean).join(" · ");
 	return (
 		<figcaption className="mt-2 text-xs text-muted-foreground">
 			{credit.url ? (
