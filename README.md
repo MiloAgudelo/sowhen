@@ -24,3 +24,12 @@ pnpm dev                                       # cf dev (Vite); prints the local
   without `--local` and `--persist-to`. Locally you then use the new id in the command above.
 
 Tests: `pnpm test` (Vitest) and `pnpm e2e` (Playwright).
+
+- `pnpm e2e` runs the full matrix (ADR 0012: Chromium, Firefox, WebKit × five devices, each in a zone
+  from the matrix). The fast slice:
+  `pnpm e2e --grep @smoke --project=chromium-laptop --project=firefox-laptop --project=webkit-small-phone`.
+- Playwright starts its own server (`e2e/server.mjs`): it deletes `.cloudflare/state-e2e`, applies the
+  migrations into it, then runs `cf dev` with `SOWHEN_STATE_DIR` and `SOWHEN_PORT=5199`, which
+  `vite.config.ts` passes to the Cloudflare plugin (`persistState`) and Vite (`strictPort`). `cf dev`
+  itself takes neither flag. Your own `.cloudflare/state` is untouched.
+- First time on a machine: `pnpm exec playwright install chromium firefox webkit`.
