@@ -1,81 +1,62 @@
-// Home-page photo slot (ADR 0011). Reads public/hero/hero.{avif,webp,jpg}. A violet gradient sits
-// behind the image and shows on its own while the files don't exist. Never used on the event page.
-import { useState } from "react";
+// Home-page photo band (ADR 0011). The photo (public/hero/hero.{avif,webp,jpg}) is the background of a
+// full-width band under a violet overlay, like the link-preview image (ADR 0015). The header and the
+// intro sit on it in white; the page content overlaps its bottom edge (PageShell `hero`).
+// Never used on the event page.
+import { type ReactNode, useState } from "react";
 import { HERO_ALT, HERO_CREDIT, type HeroCredit as HeroCreditData } from "@/lib/hero";
 import { cn } from "@/lib/utils";
-import { Doodles } from "./SiteChrome";
 
-export function HeroPhoto({ className }: { className?: string }) {
+export function HeroBand({ header, children }: { header: ReactNode; children: ReactNode }) {
 	const [failed, setFailed] = useState(false);
-	const [loaded, setLoaded] = useState(false);
 	return (
-		<figure className={cn("relative m-0", className)}>
-			<div className="relative isolate aspect-[16/10] w-full overflow-hidden rounded-2xl bg-[radial-gradient(120%_90%_at_10%_10%,var(--brand-500)_0%,var(--brand-700)_45%,var(--brand-950)_100%)] sm:aspect-[4/5] lg:aspect-[4/5]">
-				{!failed && (
-					<picture>
-						<source srcSet="/hero/hero.avif" type="image/avif" />
-						<source srcSet="/hero/hero.webp" type="image/webp" />
-						<img
-							src="/hero/hero.jpg"
-							alt={HERO_ALT}
-							decoding="async"
-							fetchPriority="high"
-							onLoad={() => setLoaded(true)}
-							onError={() => setFailed(true)}
-							className={cn(
-								"absolute inset-0 size-full object-cover transition-opacity duration-500",
-								loaded ? "opacity-100" : "opacity-0",
-							)}
-						/>
-					</picture>
-				)}
-				{(failed || !loaded) && <GradientArt />}
+		<div className="relative isolate overflow-hidden bg-brand-900 text-white">
+			{!failed && (
+				<picture>
+					<source srcSet="/hero/hero.avif" type="image/avif" />
+					<source srcSet="/hero/hero.webp" type="image/webp" />
+					<img
+						src="/hero/hero.jpg"
+						alt={HERO_ALT}
+						decoding="async"
+						fetchPriority="high"
+						onError={() => setFailed(true)}
+						className="absolute inset-0 -z-20 size-full object-cover object-[70%_60%]"
+					/>
+				</picture>
+			)}
+			{/* Violet overlay: dense on the text side, lighter over the people. */}
+			<div
+				aria-hidden
+				className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,color-mix(in_oklab,var(--brand-950)_92%,transparent)_0%,color-mix(in_oklab,var(--brand-800)_78%,transparent)_45%,color-mix(in_oklab,var(--brand-700)_45%,transparent)_100%)]"
+			/>
+			<div
+				aria-hidden
+				className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-brand-950/50 to-transparent"
+			/>
+			{header}
+			<div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-24 sm:px-6 sm:pt-14 sm:pb-36 lg:pt-20 lg:pb-44">
+				{children}
 			</div>
-			<HeroCredit credit={HERO_CREDIT} />
-		</figure>
-	);
-}
-
-/** Fallback artwork: a few rows of "slots" over the gradient, with palette strokes. */
-function GradientArt() {
-	return (
-		<div aria-hidden className="absolute inset-0">
-			<svg viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice" className="size-full">
-				{Array.from({ length: 5 }, (_, c) =>
-					Array.from({ length: 9 }, (_, r) => {
-						const lit = (c + r) % 4 === 0 || (c === 2 && r > 2 && r < 7) || (c === 3 && r > 3 && r < 6);
-						return (
-							<rect
-								key={`${c}-${r}`}
-								x={60 + c * 58}
-								y={70 + r * 42}
-								width="48"
-								height="34"
-								rx="8"
-								fill="#fff"
-								opacity={lit ? 0.5 : 0.08}
-							/>
-						);
-					}),
-				)}
-			</svg>
-			<Doodles className="absolute right-0 bottom-3 left-0 w-full" />
+			<HeroCredit
+				credit={HERO_CREDIT}
+				className="absolute right-4 bottom-[4.5rem] sm:right-6 sm:bottom-[6.75rem]"
+			/>
 		</div>
 	);
 }
 
-export function HeroCredit({ credit }: { credit: HeroCreditData }) {
+export function HeroCredit({ credit, className }: { credit: HeroCreditData; className?: string }) {
 	if (!credit.photographer && !credit.source) return null;
 	const text = credit.line ?? [credit.photographer && `Photo: ${credit.photographer}`, credit.source].filter(Boolean).join(" · ");
 	return (
-		<figcaption className="mt-2 text-xs text-muted-foreground">
+		<p className={cn("m-0 text-[0.7rem] text-white/75 [text-shadow:0_1px_2px_rgb(0_0_0/0.5)]", className)}>
 			{credit.url ? (
-				<a href={credit.url} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-foreground">
+				<a href={credit.url} target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-white">
 					{text}
 				</a>
 			) : (
 				text
 			)}
-		</figcaption>
+		</p>
 	);
 }

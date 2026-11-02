@@ -1,19 +1,21 @@
 import type * as React from "react";
+import { HeroBand } from "@/components/layout/Hero";
 import { linkProps } from "@/lib/route";
 import { cn } from "@/lib/utils";
 
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({ className, inverted = false }: { className?: string; inverted?: boolean }) {
 	return (
 		<a
 			{...linkProps("/")}
 			className={cn(
-				"inline-flex items-center gap-2 rounded-md text-xl font-semibold tracking-tight text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+				"inline-flex items-center gap-2 rounded-md text-xl font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+				inverted ? "text-white focus-visible:ring-white/60" : "text-foreground",
 				className,
 			)}
 		>
 			<MarkIcon className="size-7" />
 			<span>
-				so<span className="text-primary">when</span>
+				so<span className={inverted ? "text-brand-200" : "text-primary"}>when</span>
 			</span>
 		</a>
 	);
@@ -44,10 +46,10 @@ export function MarkIcon({ className }: { className?: string }) {
 	);
 }
 
-export function SiteHeader({ children }: { children?: React.ReactNode }) {
+export function SiteHeader({ children, inverted = false }: { children?: React.ReactNode; inverted?: boolean }) {
 	return (
 		<header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 pt-4 pb-2 sm:px-6">
-			<Wordmark />
+			<Wordmark inverted={inverted} />
 			{children}
 		</header>
 	);
@@ -71,11 +73,30 @@ export function SiteFooter() {
 	);
 }
 
-export function PageShell({ children, header }: { children: React.ReactNode; header?: React.ReactNode }) {
+/**
+ * Page frame. With `hero`, the header and the hero content sit on a full-width photo band
+ * (components/layout/Hero.tsx) and the page content starts overlapping the band's bottom edge.
+ */
+export function PageShell({
+	children,
+	header,
+	hero,
+}: {
+	children: React.ReactNode;
+	header?: React.ReactNode;
+	hero?: React.ReactNode;
+}) {
 	return (
 		<>
-			<SiteHeader>{header}</SiteHeader>
-			<main id="main" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 sm:px-6">
+			{hero ? (
+				<HeroBand header={<SiteHeader inverted>{header}</SiteHeader>}>{hero}</HeroBand>
+			) : (
+				<SiteHeader>{header}</SiteHeader>
+			)}
+			<main
+				id="main"
+				className={cn("mx-auto w-full max-w-5xl flex-1 px-4 pb-12 sm:px-6", hero && "relative z-10 -mt-16 sm:-mt-24")}
+			>
 				{children}
 			</main>
 			<SiteFooter />

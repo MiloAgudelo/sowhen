@@ -3,8 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CopyField } from "@/components/common/CopyField";
 import { ZonePicker } from "@/components/common/ZonePicker";
 import { DatesField, DurationField, WindowField } from "@/components/event-form/fields";
-import { Doodles, PageShell } from "@/components/layout/SiteChrome";
-import { HeroPhoto } from "@/components/layout/Hero";
+import { PageShell } from "@/components/layout/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,9 +32,24 @@ export function CreatePage() {
 	const [created, setCreated] = useState<CreateEventResult | null>(null);
 
 	return (
-		<PageShell>
+		<PageShell hero={created ? undefined : <CreateIntro />}>
 			{created ? <SaveAdminLink result={created} /> : <CreateForm onCreated={setCreated} />}
 		</PageShell>
+	);
+}
+
+/** Headline on the photo band (PageShell `hero`). */
+function CreateIntro() {
+	return (
+		<section>
+			<h1 className="max-w-2xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+				Find a time that works, <span className="text-brand-200">in everyone's time zone.</span>
+			</h1>
+			<p className="mt-4 max-w-lg text-lg text-white/85">
+				Make an event, share the link, and everyone paints when they're free. Each person sees the grid in their
+				own time. No accounts.
+			</p>
+		</section>
 	);
 }
 
@@ -143,21 +157,8 @@ function CreateForm({ onCreated }: { onCreated: (r: CreateEventResult) => void }
 	const host = typeof location !== "undefined" ? location.host : "sowhen.uk";
 
 	return (
-		<div className="grid grid-cols-1 gap-8 pt-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-12">
+		<div className="mx-auto w-full max-w-2xl">
 			<div className="min-w-0">
-				<section className="relative mb-8">
-					<h1 className="max-w-xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-5xl">
-						Find a time that works, <span className="text-primary">in everyone's time zone.</span>
-					</h1>
-					<p className="mt-3 max-w-lg text-lg text-muted-foreground">
-						Make an event, share the link, and everyone paints when they're free. Each person sees the grid in
-						their own time. No accounts.
-					</p>
-					<Doodles className="mt-2 h-10 w-56 sm:hidden" />
-				</section>
-
-				<HeroPhoto className="mb-8 lg:hidden" />
-
 				<form onSubmit={submit} noValidate className="grid grid-cols-1 gap-8" aria-labelledby="create-heading">
 					<h2 id="create-heading" className="sr-only">
 						Create an event
@@ -265,11 +266,6 @@ function CreateForm({ onCreated }: { onCreated: (r: CreateEventResult) => void }
 					</div>
 				</form>
 			</div>
-			<aside className="hidden lg:block">
-				<div className="sticky top-6">
-					<HeroPhoto />
-				</div>
-			</aside>
 		</div>
 	);
 }
