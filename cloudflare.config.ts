@@ -14,7 +14,11 @@ export default defineConfig({
 			runWorkerFirst: ["/api/*"],
 		},
 		env: {
-			DB: bindings.d1({ name: "sowhen" }),
+			// Bound by id only: the local simulation keys a D1 database by its name when one is set,
+			// but `cf d1 migrations apply --local` only accepts an id, so a name would split them.
+			// This placeholder id is local-only; replace it with the real id (from
+			// `cf d1 create --jurisdiction eu`) before deploying. See README "Local development".
+			DB: bindings.d1({ id: "00000000-0000-4000-8000-000000000001" }),
 			ASSETS: bindings.assets(),
 		},
 		triggers: [
