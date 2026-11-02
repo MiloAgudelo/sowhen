@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export function HeroBand({ header, children }: { header: ReactNode; children: ReactNode }) {
 	const [failed, setFailed] = useState(false);
 	return (
-		<div className="relative isolate overflow-hidden bg-brand-900 text-white">
+		<div className="relative isolate overflow-hidden bg-brand-900 text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.55),0_2px_18px_rgb(0_0_0/0.45)]">
 			{!failed && (
 				<picture>
 					<source srcSet="/hero/hero.avif" type="image/avif" />
@@ -24,17 +24,8 @@ export function HeroBand({ header, children }: { header: ReactNode; children: Re
 					/>
 				</picture>
 			)}
-			{/* Red overlay: dense on the text side, lighter over the people. */}
-			<div
-				aria-hidden
-				className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,color-mix(in_oklab,var(--brand-950)_90%,transparent)_0%,color-mix(in_oklab,var(--brand-800)_72%,transparent)_45%,color-mix(in_oklab,var(--brand-600)_40%,transparent)_100%)]"
-			/>
-			{/* Phones: the text spans the full width, so darken the light right-hand side too. */}
-			<div aria-hidden className="absolute inset-0 -z-10 bg-brand-950/45 sm:hidden" />
-			<div
-				aria-hidden
-				className="absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-brand-950/50 to-transparent"
-			/>
+			{/* Light red overlay (20%) so the photo shows; the text carries its own shadow for legibility. */}
+			<div aria-hidden className="absolute inset-0 -z-10 bg-brand-800/20" />
 			{header}
 			<div className="mx-auto w-full max-w-5xl px-4 pt-8 pb-24 sm:px-6 sm:pt-14 sm:pb-36 lg:pt-20 lg:pb-44">
 				{children}

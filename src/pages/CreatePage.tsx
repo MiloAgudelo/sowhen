@@ -45,7 +45,7 @@ function CreateIntro() {
 			<h1 className="max-w-2xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-5xl lg:text-[3.5rem]">
 				Find a time that works, <span className="text-brand-200">in everyone's time zone.</span>
 			</h1>
-			<p className="mt-4 max-w-lg text-lg text-white/85">
+			<p className="mt-4 max-w-lg text-lg text-white">
 				Make an event, share the link, and everyone paints when they're free. Each person sees the grid in their
 				own time. No accounts.
 			</p>
