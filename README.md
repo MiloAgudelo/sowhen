@@ -9,19 +9,29 @@ Everything runs against Cloudflare's local simulation. Use `cf`, never `wrangler
 ```sh
 pnpm install
 pnpm exec cf workers types                     # generates .cloudflare/types (needed by tsc)
-pnpm exec cf d1 migrations apply 00000000-0000-4000-8000-000000000001 --local --persist-to .cloudflare/state
+pnpm exec cf d1 migrations apply 31bc01cd-054d-424e-8469-e40f4c941629 --local --persist-to .cloudflare/state
 pnpm dev                                       # cf dev (Vite); prints the local URL
 ```
 
-- The id `00000000-0000-4000-8000-000000000001` is the local-only placeholder on the `DB` binding in
-  `cloudflare.config.ts`. `cf d1 migrations apply` only accepts an id, and the local simulation keys
-  the database by the binding's name if it has one, so the binding uses an id only.
+- `31bc01cd-054d-424e-8469-e40f4c941629` is the production D1 database (EU jurisdiction, ADR 0013).
+  With `--local` the command only touches the local copy. `cf d1 migrations apply` only accepts an id,
+  and the local simulation keys the database by the binding's name if it has one, so the binding uses
+  an id only.
 - `--persist-to .cloudflare/state` is the folder `cf dev` keeps its local data in. Re-run the
   migrations command after adding a migration. To start from an empty database, stop the dev server
   and delete `.cloudflare/state`.
-- Before the first deploy, create the real database (`cf d1 create --jurisdiction eu`, ADR 0013),
-  put its id on the `DB` binding instead of the placeholder, and run the migrations command again
-  without `--local` and `--persist-to`. Locally you then use the new id in the command above.
+
+## Deploy
+
+This folder is bound to the `Milo-Agudelo` cf profile (`cf auth activate Milo-Agudelo`); check with
+`cf auth whoami` before deploying.
+
+```sh
+pnpm exec cf d1 migrations apply 31bc01cd-054d-424e-8469-e40f4c941629   # production, only when a migration was added
+pnpm deploy                                                                # cf deploy → sowhen.uk
+```
+
+## Tests
 
 Tests: `pnpm test` (Vitest) and `pnpm e2e` (Playwright).
 

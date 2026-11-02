@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATE_DIR = ".cloudflare/state-e2e";
-const DB_ID = "00000000-0000-4000-8000-000000000001"; // local-only placeholder id on the DB binding
+const DB_ID = "31bc01cd-054d-424e-8469-e40f4c941629"; // local-only placeholder id on the DB binding
 const PORT = process.env.SOWHEN_PORT ?? "5199";
 
 const isWin = process.platform === "win32";

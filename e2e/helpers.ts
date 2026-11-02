@@ -311,7 +311,7 @@ export async function bestSlots(page: Page): Promise<{ start: number; end: numbe
 // ---- Local-only test hooks: the dev server's Local Explorer API (miniflare, port 5199 only)
 
 const EXPLORER = "/cdn-cgi/local/explorer/api";
-const LOCAL_DB_ID = "00000000-0000-4000-8000-000000000001";
+const LOCAL_DB_ID = "31bc01cd-054d-424e-8469-e40f4c941629";
 
 /** Run SQL against the local e2e D1 (never the real database: this route exists only in `cf dev`). */
 export async function localSql(request: APIRequestContext, sql: string, params: unknown[] = []) {
