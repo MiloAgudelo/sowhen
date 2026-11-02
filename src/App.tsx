@@ -15,11 +15,50 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 // Each page is its own chunk (ADR 0010, amendment "bundle size"). NotFoundPage is tiny and stays in
 // the entry chunk. import() is cached, so preloading and lazy() share one request.
 const pageLoaders = {
-	create: () => import("@/pages/CreatePage").then((m) => ({ default: m.CreatePage })),
-	privacy: () => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage })),
-	event: () => import("@/pages/EventPage").then((m) => ({ default: m.EventPage })),
-	admin: () => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage })),
+	create: reloadOnChunkError(() => import("@/pages/CreatePage").then((m) => ({ default: m.CreatePage }))),
+	privacy: reloadOnChunkError(() => import("@/pages/PrivacyPage").then((m) => ({ default: m.PrivacyPage }))),
+	event: reloadOnChunkError(() => import("@/pages/EventPage").then((m) => ({ default: m.EventPage }))),
+	admin: reloadOnChunkError(() => import("@/pages/AdminPage").then((m) => ({ default: m.AdminPage }))),
 };
+
+/**
+ * A page chunk can fail to load when a deploy replaced it while this tab was open (the old file names
+ * are gone) or on a flaky connection. Browsers cache a failed import(), so retrying in place doesn't
+ * help: reload the page once to pick up the current index.html. A timestamp in sessionStorage stops a
+ * reload loop; a second failure within 30 s falls through to the error boundary. If the page is already
+ * navigating away, the browser cancelled the import itself: do nothing, or we'd hijack the navigation.
+ */
+let leavingPage = false;
+if (typeof window !== "undefined") {
+	window.addEventListener("beforeunload", () => {
+		leavingPage = true;
+	});
+	window.addEventListener("pageshow", () => {
+		leavingPage = false;
+	});
+}
+
+function reloadOnChunkError<T>(load: () => Promise<T>): () => Promise<T> {
+	const key = "sowhen:chunk-reload";
+	return () =>
+		load().catch((error: unknown) => {
+			if (leavingPage) return new Promise<T>(() => {});
+			let last = 0;
+			try {
+				last = Number(sessionStorage.getItem(key) ?? 0);
+			} catch {
+				throw error;
+			}
+			if (Date.now() - last < 30_000) throw error;
+			try {
+				sessionStorage.setItem(key, String(Date.now()));
+			} catch {
+				throw error;
+			}
+			location.reload();
+			return new Promise<T>(() => {});
+		});
+}
 
 const CreatePage = lazy(pageLoaders.create);
 const PrivacyPage = lazy(pageLoaders.privacy);
