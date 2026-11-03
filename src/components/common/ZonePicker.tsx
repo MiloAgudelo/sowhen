@@ -1,11 +1,12 @@
 // Searchable IANA time-zone combobox: Popover + input + listbox (cmdk would be a new dependency).
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ZoneFlag } from "@/components/common/ZoneFlag";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
 	allZones,
+	canonicalZone,
 	browserZone,
 	offsetLabel,
 	zoneCity,
@@ -49,6 +50,33 @@ function zoneOptions(): ZoneOption[] {
 	return optionsCache;
 }
 
+/**
+ * Zones the WSJ 2027 team uses most, listed before all others when the search is empty. Edit freely:
+ * any IANA name works (aliases are canonicalised).
+ */
+export const COMMON_ZONES: readonly ZoneId[] = [
+	"America/Los_Angeles",
+	"America/Mexico_City",
+	"America/New_York",
+	"America/Bogota",
+	"America/Sao_Paulo",
+	"Europe/London",
+	"Europe/Warsaw",
+	"Europe/Berlin",
+	"Europe/Madrid",
+	"Europe/Paris",
+	"Europe/Zurich",
+	"Africa/Nairobi",
+	"Africa/Cairo",
+	"Asia/Dubai",
+	"Asia/Kolkata",
+	"Asia/Kuala_Lumpur",
+	"Asia/Manila",
+	"Asia/Tokyo",
+	"Australia/Sydney",
+	"Pacific/Auckland",
+];
+
 const fold = (s: string) =>
 	s
 		.toLowerCase()
@@ -87,26 +115,33 @@ export function ZonePicker({
 	const listId = useId();
 	const listRef = useRef<HTMLUListElement>(null);
 
-	const results = useMemo(() => {
-		if (!open) return [];
+	// With an empty search: your zones (selected, suggested, browser), then the team's common zones by
+	// offset, then a divider and every other zone. `topCount` is where the divider goes.
+	const { results, topCount } = useMemo(() => {
+		if (!open) return { results: [], topCount: 0 };
 		const opts = zoneOptions();
+		const byZone = new Map(opts.map((o) => [o.zone, o]));
+		const pick = (zones: ZoneId[]) =>
+			zones.map((z) => byZone.get(canonicalZone(z))).filter((o): o is ZoneOption => !!o);
+		const byOffset = (a: ZoneOption, b: ZoneOption) => a.offset - b.offset || a.city.localeCompare(b.city);
 		const q = fold(query);
 		if (!q) {
-			const sugg = [...new Set([...suggested, browserZone()])]
-				.map((z) => opts.find((o) => o.zone === z))
-				.filter((o): o is ZoneOption => !!o);
-			const rest = opts.filter((o) => !sugg.includes(o)).sort((a, b) => a.offset - b.offset || a.city.localeCompare(b.city));
-			return [...sugg, ...rest];
+			const mine = [...new Set(pick([value, ...suggested, browserZone()]))];
+			const common = pick([...COMMON_ZONES]).filter((o) => !mine.includes(o)).sort(byOffset);
+			const top = [...mine, ...new Set(common)];
+			const rest = opts.filter((o) => !top.includes(o)).sort(byOffset);
+			return { results: [...top, ...rest], topCount: top.length };
 		}
 		const terms = q.split(/\s+/);
-		return opts
+		const found = opts
 			.filter((o) => terms.every((t) => o.haystack.includes(t)))
 			.sort((a, b) => {
 				const ac = fold(a.city).startsWith(q) ? 0 : 1;
 				const bc = fold(b.city).startsWith(q) ? 0 : 1;
-				return ac - bc || a.offset - b.offset || a.city.localeCompare(b.city);
+				return ac - bc || byOffset(a, b);
 			});
-	}, [open, query, suggested]);
+		return { results: found, topCount: 0 };
+	}, [open, query, suggested, value]);
 
 	const visible = results.slice(0, 80);
 
@@ -195,27 +230,33 @@ export function ZonePicker({
 				<ul ref={listRef} id={listId} role="listbox" aria-label="Time zones" className="max-h-72 overflow-y-auto p-1">
 					{visible.length === 0 && <li className="px-2 py-6 text-center text-sm text-muted-foreground">No zone found.</li>}
 					{visible.map((o, i) => (
-						<li
-							key={o.zone}
-							id={`${listId}-${i}`}
-							data-index={i}
-							role="option"
-							aria-selected={o.zone === value}
-							onPointerMove={() => setActive(i)}
-							onClick={() => choose(o.zone)}
-							className={cn(
-								"flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm",
-								i === active && "bg-accent text-accent-foreground",
+						<Fragment key={o.zone}>
+							{i === topCount && topCount > 0 && (
+								<li role="presentation" className="mx-2 mt-2 mb-1 border-t pt-2 text-xs font-medium text-muted-foreground">
+									All time zones
+								</li>
 							)}
-						>
-							<CheckIcon className={cn("size-4 shrink-0", o.zone === value ? "opacity-100" : "opacity-0")} />
-							<ZoneFlag zone={o.zone} />
-							<span className="min-w-0 flex-1 truncate">
-								{o.city}
-								{o.region && <span className="text-muted-foreground"> · {o.region}</span>}
-							</span>
-							<span className="shrink-0 text-xs text-muted-foreground tabular-nums">{offsetLabel(o.offset)}</span>
-						</li>
+							<li
+								id={`${listId}-${i}`}
+								data-index={i}
+								role="option"
+								aria-selected={o.zone === value}
+								onPointerMove={() => setActive(i)}
+								onClick={() => choose(o.zone)}
+								className={cn(
+									"flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm",
+									i === active && "bg-accent text-accent-foreground",
+								)}
+							>
+								<CheckIcon className={cn("size-4 shrink-0", o.zone === value ? "opacity-100" : "opacity-0")} />
+								<ZoneFlag zone={o.zone} />
+								<span className="min-w-0 flex-1 truncate">
+									{o.city}
+									{o.region && <span className="text-muted-foreground"> · {o.region}</span>}
+								</span>
+								<span className="shrink-0 text-xs text-muted-foreground tabular-nums">{offsetLabel(o.offset)}</span>
+							</li>
+						</Fragment>
 					))}
 					{results.length > visible.length && (
 						<li className="px-2 py-2 text-center text-xs text-muted-foreground">Keep typing to narrow down…</li>
