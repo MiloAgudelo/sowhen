@@ -55,24 +55,9 @@ function zoneOptions(): ZoneOption[] {
  * any IANA name works (aliases are canonicalised).
  */
 export const COMMON_ZONES: readonly ZoneId[] = [
-	"America/Los_Angeles",
-	"America/Mexico_City",
-	"America/New_York",
 	"America/Bogota",
-	"America/Sao_Paulo",
 	"Europe/London",
 	"Europe/Warsaw",
-	"Europe/Berlin",
-	"Europe/Madrid",
-	"Europe/Paris",
-	"Europe/Zurich",
-	"Africa/Nairobi",
-	"Africa/Cairo",
-	"Asia/Dubai",
-	"Asia/Kolkata",
-	"Asia/Kuala_Lumpur",
-	"Asia/Manila",
-	"Asia/Tokyo",
 	"Australia/Sydney",
 	"Pacific/Auckland",
 ];
