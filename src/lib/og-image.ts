@@ -1,11 +1,11 @@
 // The per-event link-preview image (ADR 0018), drawn in the browser and uploaded with the admin
 // secret. The Worker can't draw it: the free Workers plan allows ~10 ms of CPU per request.
 // Same look as the static /og/sowhen.png (scripts/og-image.mjs): the hero photo under a red overlay,
-// with the event title and dates instead of the tagline. Never names.
+// with the event title and dates instead of the tagline. Never names. No photo credit: the home page
+// carries it.
 import { ADMIN_HEADER, OG_DRAWN_FOR_HEADER } from "@/shared/api";
 import { formatDates, OG_IMAGE_HEIGHT as H, OG_IMAGE_MAX_BYTES, OG_IMAGE_WIDTH as W } from "@/shared/preview";
 import type { EventDto } from "@/shared/types";
-import { HERO_CREDIT } from "@/lib/hero";
 import { zoneCity } from "@/lib/zones";
 
 const FONT = '"Outfit Variable", Outfit, ui-sans-serif, system-ui, sans-serif';
@@ -100,14 +100,14 @@ export async function drawOgImage(event: Drawable): Promise<Blob> {
 
 	// Red overlay, denser on the left where the text sits.
 	const side = ctx.createLinearGradient(0, 0, W, H * 0.18);
-	side.addColorStop(0, "rgba(67,12,18,0.94)");
-	side.addColorStop(0.42, "rgba(145,29,39,0.86)");
-	side.addColorStop(0.75, "rgba(214,48,60,0.6)");
-	side.addColorStop(1, "rgba(214,48,60,0.48)");
+	side.addColorStop(0, "rgba(67,12,18,0.75)");
+	side.addColorStop(0.42, "rgba(145,29,39,0.69)");
+	side.addColorStop(0.75, "rgba(214,48,60,0.48)");
+	side.addColorStop(1, "rgba(214,48,60,0.38)");
 	ctx.fillStyle = side;
 	ctx.fillRect(0, 0, W, H);
 	const bottom = ctx.createLinearGradient(0, H, 0, H * 0.5);
-	bottom.addColorStop(0, "rgba(67,12,18,0.6)");
+	bottom.addColorStop(0, "rgba(67,12,18,0.48)");
 	bottom.addColorStop(1, "rgba(67,12,18,0)");
 	ctx.fillStyle = bottom;
 	ctx.fillRect(0, 0, W, H);
@@ -160,10 +160,6 @@ export async function drawOgImage(event: Drawable): Promise<Blob> {
 	ctx.font = `500 28px ${FONT}`;
 	ctx.fillStyle = "#fff";
 	ctx.fillText("Paint when you're free · sowhen.uk", PAD, H - 56);
-	ctx.font = `400 15px ${FONT}`;
-	ctx.fillStyle = "rgba(255,255,255,0.72)";
-	ctx.textAlign = "right";
-	ctx.fillText(`Photo ${HERO_CREDIT.line ?? ""}`.trim(), W - 28, H - 22);
 
 	for (const quality of [0.85, 0.72, 0.6]) {
 		const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
