@@ -18,7 +18,7 @@ Paid for this.
 
 - **The browser draws it.** `src/lib/og-image.ts` draws the image on a canvas: the hero photo under
   the red overlay, the wordmark, the event title (as large as fits in three lines), the dates in the
-  creator's zone, the footer and the photo credit. It's a JPEG, ~80–200 kB. The text comes from the
+  creator's zone and the footer, with no photo credit (the home page credits the photo). It's a JPEG, ~80–200 kB. The text comes from the
   same `formatDates` as the preview description (`src/shared/preview.ts`). **No names.**
 - **Only the admin uploads it.** `PUT /api/events/:slug/og-image` needs the admin secret. The Worker
   checks it's a real JPEG of exactly 1200×630 (reads the SOF marker; HTML or SVG can't pass), at most
