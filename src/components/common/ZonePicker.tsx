@@ -100,7 +100,7 @@ export function ZonePicker({
 	const listId = useId();
 	const listRef = useRef<HTMLUListElement>(null);
 
-	// With an empty search: your zones (selected, suggested, browser), then the team's common zones by
+	// With an empty search: your zones (suggested, e.g. the creator's; browser; selected), then the team's common zones by
 	// offset, then a divider and every other zone. `topCount` is where the divider goes.
 	const { results, topCount } = useMemo(() => {
 		if (!open) return { results: [], topCount: 0 };
@@ -111,7 +111,7 @@ export function ZonePicker({
 		const byOffset = (a: ZoneOption, b: ZoneOption) => a.offset - b.offset || a.city.localeCompare(b.city);
 		const q = fold(query);
 		if (!q) {
-			const mine = [...new Set(pick([value, ...suggested, browserZone()]))];
+			const mine = [...new Set(pick([...suggested, browserZone(), value]))];
 			const common = pick([...COMMON_ZONES]).filter((o) => !mine.includes(o)).sort(byOffset);
 			const top = [...mine, ...new Set(common)];
 			const rest = opts.filter((o) => !top.includes(o)).sort(byOffset);

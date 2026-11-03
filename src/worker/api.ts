@@ -4,6 +4,7 @@ import "temporal-polyfill/global"; // domain reads globalThis.Temporal (src/doma
 import { generateColumns, lastSlotEnd, normaliseName, slugify, validateSlug } from "@/domain";
 import {
 	ADMIN_HEADER,
+	OG_DRAWN_FOR_HEADER,
 	VERSION_PARAM,
 	type CreateEventResult,
 	type PatchEventResult,
@@ -11,6 +12,7 @@ import {
 	type SlugCheck,
 } from "@/shared/api";
 import type { Column, DailyWindow, EventDto, IsoDate, ZoneId } from "@/shared/types";
+import { OG_IMAGE_HEIGHT, OG_IMAGE_MAX_BYTES, OG_IMAGE_WIDTH } from "@/shared/preview";
 import { verifySecret, generateSecret, sha256Hex } from "./auth";
 import {
 	bumpVersionStatement,
@@ -25,6 +27,7 @@ import {
 	type ResponseRow,
 } from "./db";
 import { apiError, badRequest, HttpError, json, noContent, notFound, notModified, readJsonObject } from "./http";
+import { blobBytes, FRESH_IMAGE_SQL, imageKey, jpegSize } from "./og-image";
 import {
 	checkSlotsBelong,
 	parseCreateInput,
@@ -75,6 +78,9 @@ async function route(ctx: Ctx): Promise<Response> {
 				if (method === "DELETE") return deleteEvent(ctx, slug);
 			} else if (c === "admin" && d === undefined) {
 				if (method === "GET") return checkAdmin(ctx, slug);
+			} else if (c === "og-image" && d === undefined) {
+				if (method === "GET" || method === "HEAD") return getOgImage(ctx, slug);
+				if (method === "PUT") return putOgImage(ctx, slug);
 			} else if (c === "responses") {
 				if (d === undefined && method === "PUT") return putResponse(ctx, slug);
 				if (d !== undefined && method === "DELETE") return deleteResponse(ctx, slug, d);
@@ -172,6 +178,11 @@ async function createEvent(ctx: Ctx): Promise<Response> {
 	try {
 		await db.batch([
 			// An expired event that the sweep hasn't reached yet no longer holds its slug.
+			db
+				.prepare(
+					"DELETE FROM og_images WHERE event_slug = ? AND EXISTS (SELECT 1 FROM events WHERE slug = ? AND expires_at <= ?)",
+				)
+				.bind(event.slug, event.slug, ctx.nowIso),
 			db
 				.prepare(
 					"DELETE FROM responses WHERE event_slug = ? AND EXISTS (SELECT 1 FROM events WHERE slug = ? AND expires_at <= ?)",
@@ -371,4 +382,62 @@ async function deleteResponse(ctx: Ctx, rawSlug: string, rawKey: string): Promis
 	]);
 	if (!deleted?.results.length) throw new HttpError("not_found", "No response with that name.");
 	return noContent();
+}
+
+// ---- Preview image (ADR 0018)
+
+/** The admin uploads the image their browser drew. Refused if the event changed since it was drawn. */
+async function putOgImage(ctx: Ctx, slug: string): Promise<Response> {
+	const row = await requireAdmin(ctx, slug);
+	const type = ctx.request.headers.get("Content-Type") ?? "";
+	if (!type.startsWith("image/jpeg")) throw badRequest("The image must be a JPEG.");
+	if (Number(ctx.request.headers.get("Content-Length") ?? "0") > OG_IMAGE_MAX_BYTES) {
+		throw badRequest("The image is too large.");
+	}
+	const bytes = new Uint8Array(await ctx.request.arrayBuffer());
+	if (bytes.length === 0 || bytes.length > OG_IMAGE_MAX_BYTES) throw badRequest("The image is empty or too large.");
+	const size = jpegSize(bytes);
+	if (!size || size.width !== OG_IMAGE_WIDTH || size.height !== OG_IMAGE_HEIGHT) {
+		throw badRequest(`The image must be a ${OG_IMAGE_WIDTH}×${OG_IMAGE_HEIGHT} JPEG.`);
+	}
+	let drawn: { title?: unknown; dates?: unknown };
+	try {
+		drawn = JSON.parse(decodeURIComponent(ctx.request.headers.get(OG_DRAWN_FOR_HEADER) ?? ""));
+	} catch {
+		throw badRequest(`Missing or malformed ${OG_DRAWN_FOR_HEADER} header.`);
+	}
+	if (drawn.title !== row.title || JSON.stringify(drawn.dates) !== JSON.stringify(JSON.parse(row.dates))) {
+		throw badRequest("The event changed since this image was drawn.");
+	}
+	await ctx.db
+		.prepare(
+			`INSERT INTO og_images (event_slug, image, drawn_title, drawn_dates, updated_at) VALUES (?, ?, ?, ?, ?)
+			 ON CONFLICT (event_slug) DO UPDATE SET image = excluded.image, drawn_title = excluded.drawn_title,
+			   drawn_dates = excluded.drawn_dates, updated_at = excluded.updated_at`,
+		)
+		.bind(row.slug, bytes, row.title, row.dates, ctx.nowIso)
+		.run();
+	return noContent();
+}
+
+/** The image for crawlers. 404 when there's none, it's stale, or the event is gone (all look alike). */
+async function getOgImage(ctx: Ctx, rawSlug: string): Promise<Response> {
+	const slug = liveSlugOrThrow(rawSlug);
+	const row = await ctx.db
+		.prepare(FRESH_IMAGE_SQL)
+		.bind(slug, ctx.nowIso)
+		.first<{ image: unknown; updated_at: string }>();
+	const bytes = row ? blobBytes(row.image) : null;
+	if (!row || !bytes) throw notFound();
+	// The og:image URL carries the key, so it can be cached hard; other requests only briefly.
+	const current = ctx.url.searchParams.get("k") === imageKey(row.updated_at);
+	return new Response(ctx.request.method === "HEAD" ? null : bytes, {
+		headers: {
+			"Content-Type": "image/jpeg",
+			"Content-Length": String(bytes.length),
+			"Cache-Control": current ? "public, max-age=86400" : "public, max-age=60",
+			"X-Content-Type-Options": "nosniff",
+			"Content-Security-Policy": "default-src 'none'",
+		},
+	});
 }

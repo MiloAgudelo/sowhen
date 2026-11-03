@@ -137,6 +137,8 @@ function CreateForm({ onCreated }: { onCreated: (r: CreateEventResult) => void }
 				durationMinutes: duration,
 			});
 			adminSecret.set(result.event.slug, result.adminSecret);
+			// The event's own link-preview image (ADR 0018); loaded on demand, failure is harmless.
+			void import("@/lib/og-image").then((m) => m.uploadOgImage(result.event, result.adminSecret));
 			onCreated(result);
 			window.scrollTo({ top: 0 });
 		} catch (err) {

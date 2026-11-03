@@ -2,6 +2,7 @@
 // (cloudflare.config.ts runWorkerFirst); this reads index.html from the assets binding and swaps in
 // the per-page tags built by ./og.ts.
 import { buildPageHead, canonicalOrigin, matchPageRoute, type EventPreview } from "./og";
+import { imageKey } from "./og-image";
 
 /** HTML may be cached briefly, so crawler bursts don't each hit D1 (ADR 0015). /api stays no-store. */
 const HTML_CACHE = "public, max-age=60";
@@ -34,18 +35,26 @@ export async function servePage(request: Request, assets: Fetcher, db: D1Databas
 	return new Response(request.method === "HEAD" ? null : rewritten.body, { status: 200, headers });
 }
 
-/** One cheap read: the live event's preview fields and its response count. Never names. */
+/** One cheap read: the live event's preview fields, response count and fresh image key. Never names. */
 export async function readPreview(db: D1Database, slug: string, now: Date): Promise<EventPreview | null> {
 	try {
 		const row = await db
 			.prepare(
-				"SELECT title, creator_zone, dates, (SELECT COUNT(*) FROM responses WHERE event_slug = events.slug) AS responses " +
+				"SELECT title, creator_zone, dates, (SELECT COUNT(*) FROM responses WHERE event_slug = events.slug) AS responses, " +
+					"(SELECT updated_at FROM og_images o WHERE o.event_slug = events.slug AND o.drawn_title = events.title " +
+					"AND o.drawn_dates = events.dates) AS image_at " +
 					"FROM events WHERE slug = ? AND expires_at > ?",
 			)
 			.bind(slug, now.toISOString())
-			.first<{ title: string; creator_zone: string; dates: string; responses: number }>();
+			.first<{ title: string; creator_zone: string; dates: string; responses: number; image_at: string | null }>();
 		if (!row) return null;
-		return { title: row.title, creatorZone: row.creator_zone, dates: JSON.parse(row.dates), responseCount: row.responses };
+		return {
+			title: row.title,
+			creatorZone: row.creator_zone,
+			dates: JSON.parse(row.dates),
+			responseCount: row.responses,
+			...(row.image_at ? { imageKey: imageKey(row.image_at) } : {}),
+		};
 	} catch (err) {
 		// A D1 hiccup must not break the page: fall back to the generic tags.
 		console.error("sowhen preview read failed", err);

@@ -1,11 +1,14 @@
 // Link-preview tags for page HTML (ADR 0015). Pure: no `cloudflare:workers`, no HTMLRewriter, so it
 // runs in Vitest. The Worker wiring (assets fetch, D1 read, HTMLRewriter) lives in ./pages.ts.
 //
-// index.html carries the site-wide tags (og:site_name, og:type, og:image:width/height/alt,
-// twitter:card, favicon) plus home-page defaults for the per-page ones, marked `data-page`. The Worker
-// drops the `data-page` elements and appends the set built here: <title>, description, og:title,
-// og:description, og:url, og:image, twitter:title/description, canonical link and, on event and admin
-// pages, robots noindex.
+// index.html carries the site-wide tags (og:site_name, og:type, twitter:card, favicon) plus home-page
+// defaults for the per-page ones, marked `data-page`. The Worker drops the `data-page` elements and
+// appends the set built here: <title>, description, og:title, og:description, og:url, og:image with its
+// type/width/height/alt right after it (ADR 0018: an event's own image or the static one),
+// twitter:title/description, canonical link and, on event and admin pages, robots noindex.
+import { formatDates, OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from "@/shared/preview";
+
+export { formatDates };
 
 /** The canonical public origin. Local hosts keep their own origin so dev and e2e stay self-contained. */
 export const CANONICAL_ORIGIN = "https://sowhen.uk";
@@ -13,6 +16,8 @@ export const CANONICAL_ORIGIN = "https://sowhen.uk";
 const DEFAULT_TITLE = "sowhen: find a time across time zones";
 const DEFAULT_DESCRIPTION = "Paint when you're free. Everyone sees the grid in their own time zone.";
 const EVENT_TAIL = "Paint when you're free; everyone sees their own time zone.";
+const DEFAULT_IMAGE_ALT =
+	"sowhen: find a time across time zones. Scouts facing a row of flags and the Alps under a red tint.";
 
 const SLUG = /^[a-z0-9-]{1,64}$/;
 
@@ -49,6 +54,11 @@ export interface EventPreview {
 	/** ISO calendar dates in the creator zone. */
 	dates: string[];
 	responseCount: number;
+	/**
+	 * Cache key of the event's own preview image (ADR 0018), when one is stored and still shows the
+	 * current title and dates. Absent: the static image.
+	 */
+	imageKey?: string;
 }
 
 export interface PageHead {
@@ -106,6 +116,14 @@ export function buildPageHead(route: PageRoute, event: EventPreview | null, orig
 		description = describeEvent(event);
 	}
 	const url = origin + canonicalPath(route);
+	const image =
+		route.name === "event" && event?.imageKey
+			? {
+					url: `${origin}/api/events/${encodeURIComponent(route.slug)}/og-image?k=${encodeURIComponent(event.imageKey)}`,
+					type: "image/jpeg",
+					alt: `${event.title}: ${formatDates(event.dates)}. Event on sowhen.`,
+				}
+			: { url: `${origin}/og/sowhen.png`, type: "image/png", alt: DEFAULT_IMAGE_ALT };
 	const noindex = route.name === "event" || route.name === "admin";
 
 	const meta = (attr: "property" | "name", key: string, content: string) =>
@@ -116,7 +134,11 @@ export function buildPageHead(route: PageRoute, event: EventPreview | null, orig
 		meta("property", "og:title", ogTitle),
 		meta("property", "og:description", description),
 		meta("property", "og:url", url),
-		meta("property", "og:image", `${origin}/og/sowhen.png`),
+		meta("property", "og:image", image.url),
+		meta("property", "og:image:type", image.type),
+		meta("property", "og:image:width", String(OG_IMAGE_WIDTH)),
+		meta("property", "og:image:height", String(OG_IMAGE_HEIGHT)),
+		meta("property", "og:image:alt", image.alt),
 		meta("name", "twitter:title", ogTitle),
 		meta("name", "twitter:description", description),
 		`<link rel="canonical" href="${escapeHtml(url)}" />`,
@@ -140,42 +162,4 @@ function answered(n: number): string {
 /** "Europe/Warsaw" → "Warsaw", "America/Argentina/Buenos_Aires" → "Buenos Aires", "UTC" → "UTC". */
 export function zoneCity(zone: string): string {
 	return (zone.split("/").pop() ?? zone).replaceAll("_", " ");
-}
-
-const DAY_MS = 86_400_000;
-
-/**
- * The event dates as a short range. They're calendar dates in the creator zone, so they're formatted
- * as UTC midnights (formatting in a real zone could shift the day).
- *   one date            Tue 10 Nov
- *   consecutive dates   Tue 10 – Fri 14 Nov / Fri 28 Nov – Tue 2 Dec
- *   with gaps           3 dates, Tue 10 – Fri 14 Nov
- *   across a new year   Wed 30 Dec 2026 – Fri 1 Jan 2027
- */
-export function formatDates(dates: string[]): string {
-	const days = [...new Set(dates)]
-		.map((d) => Date.parse(`${d}T00:00:00Z`))
-		.filter((ms) => Number.isFinite(ms))
-		.sort((a, b) => a - b);
-	const first = days[0];
-	const last = days.at(-1);
-	if (first === undefined || last === undefined) return "";
-	const part = (ms: number, opts: Intl.DateTimeFormatOptions) =>
-		new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...opts }).format(new Date(ms));
-	const weekday = (ms: number) => part(ms, { weekday: "short" });
-	const day = (ms: number) => part(ms, { day: "numeric" });
-	const month = (ms: number) => part(ms, { month: "short" });
-	const year = (ms: number) => part(ms, { year: "numeric" });
-
-	if (first === last) return `${weekday(first)} ${day(first)} ${month(first)}`;
-	let range: string;
-	if (year(first) !== year(last)) {
-		range = `${weekday(first)} ${day(first)} ${month(first)} ${year(first)} – ${weekday(last)} ${day(last)} ${month(last)} ${year(last)}`;
-	} else if (month(first) !== month(last)) {
-		range = `${weekday(first)} ${day(first)} ${month(first)} – ${weekday(last)} ${day(last)} ${month(last)}`;
-	} else {
-		range = `${weekday(first)} ${day(first)} – ${weekday(last)} ${day(last)} ${month(last)}`;
-	}
-	const consecutive = (last - first) / DAY_MS === days.length - 1;
-	return consecutive ? range : `${days.length} dates, ${range}`;
 }

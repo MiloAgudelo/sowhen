@@ -174,6 +174,13 @@ function AdminForm({
 	const [titleError, setTitleError] = useState<string | null>(null);
 	const titleId = useId();
 
+	// Keep the link-preview image in step with the title and dates (ADR 0018): draw it when it's
+	// missing (events from before ADR 0018) or shows an old title or dates (after a save).
+	const datesKey = event.dates.join(",");
+	useEffect(() => {
+		void import("@/lib/og-image").then((m) => m.ensureOgImage(event, secret));
+	}, [event.slug, event.title, datesKey, event.creatorZone, secret]);
+
 	// When someone else's save changes the event, reset the form only if it has no local edits.
 	const [base, setBase] = useState(event);
 	useEffect(() => {

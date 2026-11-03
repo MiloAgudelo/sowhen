@@ -396,3 +396,109 @@ describe("routing", () => {
 		expect((await call("GET", "/api/health")).body).toEqual({ ok: true });
 	});
 });
+
+// ---- Preview image (ADR 0018)
+
+/** A JPEG header with just enough for jpegSize: SOI, APP0, SOF0 with the size, EOI. */
+function fakeJpeg(width: number, height: number): Uint8Array {
+	return Uint8Array.from([
+		0xff, 0xd8,
+		0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+		0xff, 0xc0, 0x00, 0x11, 0x08, height >> 8, height & 0xff, width >> 8, width & 0xff, 0x03,
+		0x01, 0x22, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01,
+		0xff, 0xd9,
+	]);
+}
+
+async function putImage(
+	slug: string,
+	opts: { admin?: string; bytes?: Uint8Array; type?: string; drawn?: unknown; now?: Date } = {},
+) {
+	const headers: Record<string, string> = { "Content-Type": opts.type ?? "image/jpeg" };
+	if (opts.admin !== undefined) headers["X-Sowhen-Admin"] = opts.admin;
+	const drawn = opts.drawn ?? { title: "Comms weekly", dates: ["2027-03-10", "2027-03-11"] };
+	headers["X-Sowhen-Drawn-For"] = encodeURIComponent(JSON.stringify(drawn));
+	const res = await handleApi(
+		new Request(`http://localhost/api/events/${slug}/og-image`, { method: "PUT", headers, body: opts.bytes ?? fakeJpeg(1200, 630) }),
+		db,
+		opts.now ?? NOW,
+	);
+	return res.status;
+}
+
+async function getImage(slug: string, query = "", method = "GET") {
+	return handleApi(new Request(`http://localhost/api/events/${slug}/og-image${query}`, { method }), db, NOW);
+}
+
+describe("preview image (ADR 0018)", () => {
+	it("reads the size of a JPEG and refuses anything else", async () => {
+		const { jpegSize } = await import("./og-image");
+		expect(jpegSize(fakeJpeg(1200, 630))).toEqual({ width: 1200, height: 630 });
+		expect(jpegSize(new TextEncoder().encode("<svg xmlns='http://www.w3.org/2000/svg'/>"))).toBeNull();
+		expect(jpegSize(fakeJpeg(1200, 630).slice(0, 24))).toBeNull();
+		expect(jpegSize(new Uint8Array())).toBeNull();
+	});
+
+	it("only the admin can upload, and only a 1200×630 JPEG of the current title and dates", async () => {
+		const { adminSecret } = await create();
+		expect(await putImage("comms-weekly")).toBe(403);
+		expect(await putImage("comms-weekly", { admin: "wrong" })).toBe(403);
+		expect(await putImage("missing-one", { admin: adminSecret })).toBe(404);
+		expect(await putImage("comms-weekly", { admin: adminSecret, type: "image/png" })).toBe(400);
+		expect(await putImage("comms-weekly", { admin: adminSecret, bytes: fakeJpeg(600, 315) })).toBe(400);
+		expect(await putImage("comms-weekly", { admin: adminSecret, bytes: new TextEncoder().encode("<html>") })).toBe(400);
+		expect(await putImage("comms-weekly", { admin: adminSecret, drawn: { title: "Old title", dates: ["2027-03-10", "2027-03-11"] } })).toBe(400);
+		expect(await putImage("comms-weekly", { admin: adminSecret, bytes: new Uint8Array(500 * 1024).fill(0xff) })).toBe(400);
+		expect((await getImage("comms-weekly")).status).toBe(404);
+
+		expect(await putImage("comms-weekly", { admin: adminSecret })).toBe(204);
+		const res = await getImage("comms-weekly");
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Content-Type")).toBe("image/jpeg");
+		expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+		expect(new Uint8Array(await res.arrayBuffer())).toEqual(fakeJpeg(1200, 630));
+		// Re-upload replaces it.
+		expect(await putImage("comms-weekly", { admin: adminSecret })).toBe(204);
+		expect(raw.prepare("SELECT COUNT(*) AS n FROM og_images").get()).toEqual({ n: 1 });
+	});
+
+	it("caches hard only for the current key; HEAD has no body", async () => {
+		const { adminSecret } = await create();
+		await putImage("comms-weekly", { admin: adminSecret });
+		const key = NOW.getTime().toString(36);
+		expect((await getImage("comms-weekly", `?k=${key}`)).headers.get("Cache-Control")).toBe("public, max-age=86400");
+		expect((await getImage("comms-weekly", "?k=old")).headers.get("Cache-Control")).toBe("public, max-age=60");
+		const head = await getImage("comms-weekly", "", "HEAD");
+		expect(head.status).toBe(200);
+		expect(await head.text()).toBe("");
+	});
+
+	it("goes stale when the title or dates change, and is deleted with the event", async () => {
+		const { adminSecret } = await create();
+		await putImage("comms-weekly", { admin: adminSecret });
+		await call("PATCH", "/api/events/comms-weekly", { admin: adminSecret, body: { durationMinutes: 120 } });
+		expect((await getImage("comms-weekly")).status).toBe(200); // duration isn't on the image
+		await call("PATCH", "/api/events/comms-weekly", { admin: adminSecret, body: { title: "Comms v2" } });
+		expect((await getImage("comms-weekly")).status).toBe(404);
+		expect(await putImage("comms-weekly", { admin: adminSecret, drawn: { title: "Comms v2", dates: ["2027-03-10", "2027-03-11"] } })).toBe(204);
+		expect((await getImage("comms-weekly")).status).toBe(200);
+
+		expect((await call("DELETE", "/api/events/comms-weekly", { admin: adminSecret })).status).toBe(204);
+		expect(raw.prepare("SELECT COUNT(*) AS n FROM og_images").get()).toEqual({ n: 0 });
+	});
+
+	it("the expiry sweep and slug reuse delete old images", async () => {
+		const { adminSecret } = await create();
+		await putImage("comms-weekly", { admin: adminSecret });
+		const after = new Date("2027-04-10T11:00:00.000Z");
+		expect((await getImage("comms-weekly")).status).toBe(200);
+		await sweepExpired(db, after);
+		expect(raw.prepare("SELECT COUNT(*) AS n FROM og_images").get()).toEqual({ n: 0 });
+
+		const again = await create();
+		await putImage("comms-weekly", { admin: again.adminSecret });
+		const res = await call("POST", "/api/events", { body: input({ dates: ["2027-05-10"] }), now: new Date("2027-05-01T00:00:00Z") });
+		expect(res.status).toBe(201);
+		expect(raw.prepare("SELECT COUNT(*) AS n FROM og_images").get()).toEqual({ n: 0 });
+	});
+});

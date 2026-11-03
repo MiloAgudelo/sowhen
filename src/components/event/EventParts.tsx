@@ -123,7 +123,7 @@ export function BestTimesList({
 								)}
 							</span>
 							<span className="flex flex-wrap gap-x-2 text-sm">
-								<span className="font-medium text-primary">
+								<span className="font-medium text-brand-700">
 									{b.available.length} of {total}
 								</span>
 								{b.ifNeeded.length > 0 && (

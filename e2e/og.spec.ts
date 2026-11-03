@@ -105,6 +105,43 @@ test.describe("link previews", () => {
 	});
 });
 
+test.describe("per-event preview image (ADR 0018)", () => {
+	const ogImage = async (request: APIRequestContext, slug: string) =>
+		(await (await request.get(`/${slug}`)).text()).match(/og:image" content="([^"]+)"/)?.[1] ?? "";
+
+	test("the admin page draws it for an event without one, and redraws it after a rename", async ({ page, request, baseURL }) => {
+		const { event, adminSecret } = await createEvent(request, { dates: ["2030-06-10", "2030-06-11"], title: "Image check" });
+		expect(await ogImage(request, event.slug)).toBe(`${baseURL}/og/sowhen.png`);
+
+		await page.goto(`/${event.slug}/admin#${adminSecret}`);
+		await expect(page.getByText("Manage event", { exact: true })).toBeVisible();
+		await expect.poll(() => ogImage(request, event.slug), { timeout: 15_000 }).toContain(`/api/events/${event.slug}/og-image?k=`);
+		const first = await ogImage(request, event.slug);
+		const html = await (await request.get(`/${event.slug}`)).text();
+		expect(one(html, "og:image:type")).toBe("image/jpeg");
+		expect(one(html, "og:image:alt")).toBe("Image check: Mon 10 – Tue 11 Jun. Event on sowhen.");
+		const img = await request.get(first);
+		expect(img.status()).toBe(200);
+		expect(img.headers()["cache-control"]).toBe("public, max-age=86400");
+
+		// Rename: the old image is stale at once (static image again), then the admin page redraws it.
+		await page.getByLabel("Event name").fill("Image check renamed");
+		await page.getByRole("button", { name: "Save changes" }).click();
+		await expect(page.getByText("Event updated", { exact: true })).toBeVisible();
+		await expect.poll(() => ogImage(request, event.slug), { timeout: 15_000 }).not.toBe(first);
+		await expect.poll(() => ogImage(request, event.slug), { timeout: 15_000 }).toContain("/og-image?k=");
+	});
+
+	test("refuses uploads without the admin secret", async ({ request }) => {
+		const { event } = await createEvent(request, { dates: ["2030-06-10"] });
+		const res = await request.put(`/api/events/${event.slug}/og-image`, {
+			headers: { "Content-Type": "image/jpeg" },
+			data: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+		});
+		expect(res.status()).toBe(403);
+	});
+});
+
 test.describe("static files skip the Worker", () => {
 	test("files are served by the asset server with their own type", async ({ request }) => {
 		for (const [path, type] of [

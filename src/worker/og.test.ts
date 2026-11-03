@@ -72,6 +72,19 @@ describe("buildPageHead", () => {
 		expect(tag(html, "robots")).toBe("noindex");
 	});
 
+	it("event with its own image (ADR 0018): a keyed JPEG URL, with type, size and alt", () => {
+		const { html } = buildPageHead({ name: "event", slug: "comms-weekly" }, { ...EVENT, imageKey: "abc" }, ORIGIN);
+		expect(tag(html, "og:image")).toBe("https://sowhen.uk/api/events/comms-weekly/og-image?k=abc");
+		expect(tag(html, "og:image:type")).toBe("image/jpeg");
+		expect(tag(html, "og:image:width")).toBe("1200");
+		expect(tag(html, "og:image:height")).toBe("630");
+		expect(tag(html, "og:image:alt")).toBe("Comms weekly: Tue 10 – Sat 14 Nov. Event on sowhen.");
+		// Without one, and on other pages, the static PNG.
+		const plain = buildPageHead({ name: "event", slug: "comms-weekly" }, EVENT, ORIGIN).html;
+		expect(tag(plain, "og:image")).toBe("https://sowhen.uk/og/sowhen.png");
+		expect(tag(plain, "og:image:type")).toBe("image/png");
+	});
+
 	it("unknown or expired event: the same generic tags as home, still noindex", () => {
 		const home = buildPageHead({ name: "home" }, null, ORIGIN);
 		const gone = buildPageHead({ name: "event", slug: "gone" }, null, ORIGIN);
@@ -195,6 +208,18 @@ describe("readPreview", () => {
 		expect(p).toEqual({ title: "Comms weekly", creatorZone: "Europe/Warsaw", dates: ["2027-02-10", "2027-02-09"], responseCount: 3 });
 		expect(queries).toHaveLength(1);
 		expect(JSON.stringify(p)).not.toMatch(/Zofia|Kasia|Ana/);
+	});
+
+	it("returns the image key only while the stored image shows the current title and dates", async () => {
+		const { raw, d1 } = fakeD1();
+		insertEvent(raw, "comms", "2027-03-15T00:00:00Z", []);
+		raw.prepare(
+			`INSERT INTO og_images (event_slug, image, drawn_title, drawn_dates, updated_at)
+			 VALUES ('comms', x'ffd8', 'Comms weekly', '["2027-02-10","2027-02-09"]', '2027-01-10T00:00:00.000Z')`,
+		).run();
+		expect((await readPreview(d1, "comms", NOW))?.imageKey).toBe(Date.parse("2027-01-10T00:00:00.000Z").toString(36));
+		raw.prepare("UPDATE events SET title = 'Renamed' WHERE slug = 'comms'").run();
+		expect((await readPreview(d1, "comms", NOW))?.imageKey).toBeUndefined();
 	});
 
 	it("treats expired and unknown events alike", async () => {

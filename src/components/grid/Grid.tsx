@@ -585,7 +585,7 @@ function DayMarker({ offset }: { offset: number }) {
 	const text = offset > 0 ? `+${offset}` : `−${-offset}`;
 	return (
 		<span
-			className="rounded-sm bg-primary/10 px-0.5 text-[0.6rem] leading-tight font-semibold text-primary"
+			className="rounded-sm bg-primary/10 px-0.5 text-[0.6rem] leading-tight font-semibold text-brand-700"
 			title={offset > 0 ? "Next day" : "Previous day"}
 		>
 			{text}

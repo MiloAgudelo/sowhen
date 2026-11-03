@@ -75,6 +75,17 @@ test("create an event: slug suggestion, zone, non-consecutive dates, midnight wi
 	expect(snap.event.columns.map((c) => c.slots.length)).toEqual([12, 12, 12]);
 	expect(snap.event.columns[0]!.slots[0]).toBe(slotOf(dates[0]!, "20:00", "Asia/Kathmandu"));
 
+	// The creator's browser drew and uploaded the event's own preview image (ADR 0018).
+	await expect
+		.poll(async () => (await (await page.request.get(`/${slug}`)).text()).match(/og:image" content="([^"]+)"/)?.[1] ?? "", {
+			timeout: 15_000,
+		})
+		.toContain(`/api/events/${slug}/og-image?k=`);
+	const image = await page.request.get(`/api/events/${slug}/og-image`);
+	expect(image.status()).toBe(200);
+	expect(image.headers()["content-type"]).toBe("image/jpeg");
+	expect((await image.body()).length).toBeGreaterThan(20_000);
+
 	// Go to the event.
 	await page.getByRole("button", { name: "I've saved it, go to the event" }).click();
 	await expect(page).toHaveURL(new RegExp(`/${slug}$`));

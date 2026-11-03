@@ -100,9 +100,10 @@ export async function liveSlugsWithPrefix(db: D1Database, prefix: string, now: s
 	return new Set(results.map((r) => r.slug));
 }
 
-/** Statements that hard-delete one event and its responses (responses first, not relying on FK cascade). */
+/** Statements that hard-delete one event, its responses and preview image (children first, not relying on FK cascade). */
 export function deleteEventStatements(db: D1Database, slug: string): D1PreparedStatement[] {
 	return [
+		db.prepare("DELETE FROM og_images WHERE event_slug = ?").bind(slug),
 		db.prepare("DELETE FROM responses WHERE event_slug = ?").bind(slug),
 		db.prepare("DELETE FROM events WHERE slug = ?").bind(slug),
 	];
@@ -113,10 +114,13 @@ export function bumpVersionStatement(db: D1Database, slug: string): D1PreparedSt
 	return db.prepare("UPDATE events SET version = version + 1 WHERE slug = ? RETURNING version").bind(slug);
 }
 
-/** ADR 0008: delete every event whose expiry has passed, with its responses. */
+/** ADR 0008: delete every event whose expiry has passed, with its responses and preview image. */
 export async function sweepExpired(db: D1Database, now: Date): Promise<{ events: number; responses: number }> {
 	const cutoff = now.toISOString();
-	const [responses, events] = await db.batch([
+	const [, responses, events] = await db.batch([
+		db
+			.prepare("DELETE FROM og_images WHERE event_slug IN (SELECT slug FROM events WHERE expires_at <= ?)")
+			.bind(cutoff),
 		db
 			.prepare("DELETE FROM responses WHERE event_slug IN (SELECT slug FROM events WHERE expires_at <= ?)")
 			.bind(cutoff),

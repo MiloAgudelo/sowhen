@@ -28,6 +28,13 @@ export interface ApiError {
 /** Header carrying the admin secret (taken from the admin link's URL fragment, ADR 0007). */
 export const ADMIN_HEADER = "X-Sowhen-Admin";
 
+/**
+ * Header on PUT /api/events/:slug/og-image: what the image shows, as
+ * encodeURIComponent(JSON.stringify({ title, dates })). The upload is refused if the event has
+ * changed since (ADR 0018).
+ */
+export const OG_DRAWN_FOR_HEADER = "X-Sowhen-Drawn-For";
+
 /** Query parameter carrying the client's known version for polling (ADR 0009). */
 export const VERSION_PARAM = "v";
 
@@ -89,6 +96,11 @@ export interface PatchEventResult {
 	/** How many responses lost at least one slot because of this change. */
 	responsesAffected: number;
 }
+
+// ---- PUT /api/events/:slug/og-image  (headers ADMIN_HEADER, OG_DRAWN_FOR_HEADER)
+//      body: a 1200×630 JPEG (Content-Type image/jpeg, ≤ OG_IMAGE_MAX_BYTES) → 204 | 400 | 403 | 404
+// ---- GET|HEAD /api/events/:slug/og-image[?k=<key>] → 200 image/jpeg | 404 (none, stale or expired)
+//      The link preview's og:image (ADR 0018). Cached for a day when `k` matches the current image.
 
 // ---- DELETE /api/events/:slug  (header ADMIN_HEADER) → 204 | 403 | 404
 

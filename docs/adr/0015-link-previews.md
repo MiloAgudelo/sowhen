@@ -43,3 +43,8 @@ Worker for this reason.
 
 - Every page navigation now runs the Worker (still within free-tier limits; static assets don't).
 - Event titles appear in chat previews, cached by the chat app. The privacy notice says so.
+
+## Amendment (2026-11-02)
+
+Events now get their own preview image, drawn by the creator's browser: see ADR 0018. The static
+image stays as the fallback and for every other page.
