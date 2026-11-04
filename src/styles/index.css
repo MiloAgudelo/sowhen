@@ -138,6 +138,15 @@
 	html {
 		-webkit-text-size-adjust: 100%;
 	}
+	/* Tailwind v4 resets buttons to the default cursor; everything clickable here should show a hand. */
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]),
+	[role="option"],
+	[role="radio"],
+	label[for],
+	summary {
+		cursor: pointer;
+	}
 	body {
 		@apply bg-background text-foreground font-sans antialiased;
 		min-height: 100dvh;
