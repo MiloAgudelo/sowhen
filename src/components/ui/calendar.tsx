@@ -81,6 +81,74 @@ export function Calendar({
 		else if (selected.length < maxSelected) onChange([...selected, iso].sort());
 	};
 
+	// ---- Drag to select: press on a day and sweep. Like the availability grid, the sweep covers the
+	// rectangle (weeks × weekdays) between the first day and the one under the pointer, and adds or
+	// removes depending on whether the first day was selected.
+	const drag = useRef<{ id: number; anchor: number; current: number; add: boolean; base: readonly IsoDate[] } | null>(null);
+	const fromPointer = useRef(false);
+
+	const indexAt = (clientX: number, clientY: number): number | null => {
+		const el = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-date]");
+		if (!el || !gridRef.current?.contains(el)) return null;
+		const i = days.indexOf(el.dataset.date ?? "");
+		return i < 0 ? null : i;
+	};
+
+	const sweep = (d: NonNullable<typeof drag.current>) => {
+		const [r1, r2] = [Math.floor(d.anchor / 7), Math.floor(d.current / 7)].sort((a, b) => a - b) as [number, number];
+		const [c1, c2] = [d.anchor % 7, d.current % 7].sort((a, b) => a - b) as [number, number];
+		const swept: IsoDate[] = [];
+		for (let r = r1; r <= r2; r++)
+			for (let c = c1; c <= c2; c++) {
+				const iso = days[r * 7 + c];
+				if (iso && !disabled(iso)) swept.push(iso);
+			}
+		if (!d.add) {
+			const drop = new Set(swept);
+			onChange(d.base.filter((x) => !drop.has(x)));
+			return;
+		}
+		const next = new Set(d.base);
+		for (const iso of swept) if (next.size < maxSelected) next.add(iso);
+		onChange([...next].sort());
+	};
+
+	const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+		if (drag.current || (e.pointerType === "mouse" && e.button !== 0)) return;
+		const i = indexAt(e.clientX, e.clientY);
+		const iso = i === null ? null : days[i];
+		if (i === null || !iso || disabled(iso)) return;
+		fromPointer.current = true;
+		drag.current = { id: e.pointerId, anchor: i, current: i, add: !selectedSet.has(iso), base: selected };
+		setFocusDate(iso);
+		try {
+			e.currentTarget.setPointerCapture(e.pointerId);
+		} catch {
+			// Some synthetic pointers can't be captured; the press still toggles its own day.
+		}
+		sweep(drag.current);
+	};
+
+	const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+		const d = drag.current;
+		if (!d || d.id !== e.pointerId) return;
+		const i = indexAt(e.clientX, e.clientY);
+		if (i === null || i === d.current) return;
+		d.current = i;
+		sweep(d);
+	};
+
+	const endDrag = (e: React.PointerEvent<HTMLDivElement>, keep: boolean) => {
+		const d = drag.current;
+		if (!d || d.id !== e.pointerId) return;
+		drag.current = null;
+		if (!keep) onChange([...d.base]);
+		// The click that follows a press was already handled here; keyboard clicks still toggle.
+		setTimeout(() => {
+			fromPointer.current = false;
+		}, 0);
+	};
+
 	const shiftMonth = (n: number) =>
 		setView((v) => {
 			const t = new Date(Date.UTC(v.y, v.m0 + n, 1));
@@ -143,7 +211,16 @@ export function Calendar({
 					</div>
 				))}
 			</div>
-			<div ref={gridRef} role="group" className="grid grid-cols-7 gap-0.5 sm:gap-1" {...aria}>
+			<div
+				ref={gridRef}
+				role="group"
+				className="grid touch-none grid-cols-7 gap-0.5 sm:gap-1"
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={(e) => endDrag(e, true)}
+				onPointerCancel={(e) => endDrag(e, false)}
+				{...aria}
+			>
 				{days.map((iso, i) => {
 					if (!iso) return <div key={`e${i}`} />;
 					const on = selectedSet.has(iso);
@@ -158,6 +235,10 @@ export function Calendar({
 							disabled={off}
 							tabIndex={iso === tabTarget ? 0 : -1}
 							onClick={() => {
+								if (fromPointer.current) {
+									fromPointer.current = false;
+									return;
+								}
 								setFocusDate(iso);
 								toggle(iso);
 							}}

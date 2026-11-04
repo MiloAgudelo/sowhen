@@ -14,6 +14,46 @@ async function pickTime(page: Page, label: "From" | "To", value: string) {
 	await page.getByRole("option", { name: new RegExp(`^${value}`) }).click();
 }
 
+test("drag across the calendar to pick or drop several days; the keyboard still toggles one", async ({ page }) => {
+	await page.goto("/");
+	await page.getByRole("button", { name: "Next month" }).click();
+	// The first Monday of next month and the two days after it sit in one calendar row.
+	let monday = 1;
+	while (new Date(`${nextMonthDay(monday)}T00:00:00Z`).getUTCDay() !== 1) monday++;
+	const week = [nextMonthDay(monday), nextMonthDay(monday + 1), nextMonthDay(monday + 2)];
+	const day = (iso: string) => page.locator(`button[data-date="${iso}"]`);
+	const chosen = page.getByRole("list", { name: "Chosen dates" }).getByRole("listitem");
+
+	const drag = async (from: string, to: string) => {
+		await day(to).scrollIntoViewIfNeeded();
+		const a = await day(from).boundingBox();
+		const b = await day(to).boundingBox();
+		if (!a || !b) throw new Error("calendar day not on screen");
+		await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 6 });
+		await page.mouse.up();
+	};
+
+	await drag(week[0]!, week[2]!);
+	for (const d of week) await expect(day(d)).toHaveAttribute("aria-pressed", "true");
+	await expect(chosen).toHaveCount(3);
+
+	// Starting on a chosen day removes instead.
+	await drag(week[1]!, week[2]!);
+	await expect(day(week[0]!)).toHaveAttribute("aria-pressed", "true");
+	await expect(day(week[1]!)).toHaveAttribute("aria-pressed", "false");
+	await expect(day(week[2]!)).toHaveAttribute("aria-pressed", "false");
+	await expect(chosen).toHaveCount(1);
+
+	// A plain click and the keyboard each toggle exactly one day.
+	await day(week[1]!).click();
+	await expect(chosen).toHaveCount(2);
+	await day(week[1]!).press("Enter");
+	await expect(day(week[1]!)).toHaveAttribute("aria-pressed", "false");
+	await expect(chosen).toHaveCount(1);
+});
+
 test("create an event: slug suggestion, zone, non-consecutive dates, midnight window, duration, admin link @smoke", async ({
 	page,
 	browser,
