@@ -31,27 +31,31 @@ export function DatesField({
 			<legend id={labelId} className="mb-1 text-sm font-medium">
 				Dates
 			</legend>
-			<p className="-mt-1 text-sm text-muted-foreground">Tap every day that could work. They don't have to be in a row.</p>
-			<div className="min-w-0 rounded-lg border bg-card p-2 sm:max-w-sm sm:p-3">
-				<Calendar selected={value} onChange={onChange} min={min} maxSelected={MAX_DATES} aria-labelledby={labelId} />
+			<p className="-mt-1 text-sm text-muted-foreground">
+				Tap every day that could work, or drag across several. They don't have to be in a row.
+			</p>
+			<div className="grid gap-3 sm:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] sm:items-start sm:gap-4">
+				<div className="min-w-0 rounded-lg border bg-card p-2 sm:p-3">
+					<Calendar selected={value} onChange={onChange} min={min} maxSelected={MAX_DATES} aria-labelledby={labelId} />
+				</div>
+				{value.length > 0 ? (
+					<ul className="flex flex-wrap content-start gap-1.5" aria-label="Chosen dates">
+						{value.map((d) => (
+							<li key={d}>
+								<button
+									type="button"
+									onClick={() => onChange(value.filter((x) => x !== d))}
+									className="inline-flex h-8 items-center gap-1 rounded-full bg-secondary pr-2 pl-3 text-sm text-secondary-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+									aria-label={`Remove ${formatIsoDate(d, { year: true })}`}
+								>
+									{formatIsoDate(d)}
+									<XIcon className="size-3.5" />
+								</button>
+							</li>
+						))}
+					</ul>
+				) : null}
 			</div>
-			{value.length > 0 ? (
-				<ul className="flex flex-wrap gap-1.5" aria-label="Chosen dates">
-					{value.map((d) => (
-						<li key={d}>
-							<button
-								type="button"
-								onClick={() => onChange(value.filter((x) => x !== d))}
-								className="inline-flex h-8 items-center gap-1 rounded-full bg-secondary pr-2 pl-3 text-sm text-secondary-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-								aria-label={`Remove ${formatIsoDate(d, { year: true })}`}
-							>
-								{formatIsoDate(d)}
-								<XIcon className="size-3.5" />
-							</button>
-						</li>
-					))}
-				</ul>
-			) : null}
 			{error && (
 				<p role="alert" className="text-sm text-destructive">
 					{error}
