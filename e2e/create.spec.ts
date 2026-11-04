@@ -23,6 +23,7 @@ test("drag across the calendar to pick or drop several days; the keyboard still 
 	const week = [nextMonthDay(monday), nextMonthDay(monday + 1), nextMonthDay(monday + 2)];
 	const day = (iso: string) => page.locator(`button[data-date="${iso}"]`);
 	const chosen = page.getByRole("list", { name: "Chosen dates" }).getByRole("listitem");
+	const total = page.getByText(/^\d+ days?$/);
 
 	const drag = async (from: string, to: string) => {
 		await day(to).scrollIntoViewIfNeeded();
@@ -37,21 +38,30 @@ test("drag across the calendar to pick or drop several days; the keyboard still 
 
 	await drag(week[0]!, week[2]!);
 	for (const d of week) await expect(day(d)).toHaveAttribute("aria-pressed", "true");
-	await expect(chosen).toHaveCount(3);
+	// Consecutive days show as one range.
+	await expect(chosen).toHaveCount(1);
+	await expect(total).toHaveText("3 days");
 
 	// Starting on a chosen day removes instead.
 	await drag(week[1]!, week[2]!);
 	await expect(day(week[0]!)).toHaveAttribute("aria-pressed", "true");
 	await expect(day(week[1]!)).toHaveAttribute("aria-pressed", "false");
 	await expect(day(week[2]!)).toHaveAttribute("aria-pressed", "false");
-	await expect(chosen).toHaveCount(1);
+	await expect(total).toHaveText("1 day");
 
 	// A plain click and the keyboard each toggle exactly one day.
 	await day(week[1]!).click();
-	await expect(chosen).toHaveCount(2);
+	await expect(total).toHaveText("2 days");
 	await day(week[1]!).press("Enter");
 	await expect(day(week[1]!)).toHaveAttribute("aria-pressed", "false");
-	await expect(chosen).toHaveCount(1);
+	await expect(total).toHaveText("1 day");
+
+	// Removing a range chip drops all its days.
+	await drag(week[2]!, week[0]!);
+	await expect(total).toHaveText("3 days");
+	await chosen.getByRole("button").click();
+	for (const d of week) await expect(day(d)).toHaveAttribute("aria-pressed", "false");
+	await expect(chosen).toHaveCount(0);
 });
 
 test("create an event: slug suggestion, zone, non-consecutive dates, midnight window, duration, admin link @smoke", async ({

@@ -1,7 +1,7 @@
 // Form fields shared by the create page and the admin page.
 import { XIcon } from "lucide-react";
 import { useId, useMemo } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { addDays, Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -39,21 +39,26 @@ export function DatesField({
 					<Calendar selected={value} onChange={onChange} min={min} maxSelected={MAX_DATES} aria-labelledby={labelId} />
 				</div>
 				{value.length > 0 ? (
-					<ul className="flex flex-wrap content-start gap-1.5" aria-label="Chosen dates">
-						{value.map((d) => (
-							<li key={d}>
-								<button
-									type="button"
-									onClick={() => onChange(value.filter((x) => x !== d))}
-									className="inline-flex h-8 items-center gap-1 rounded-full bg-secondary pr-2 pl-3 text-sm text-secondary-foreground hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-									aria-label={`Remove ${formatIsoDate(d, { year: true })}`}
-								>
-									{formatIsoDate(d)}
-									<XIcon className="size-3.5" />
-								</button>
-							</li>
-						))}
-					</ul>
+					<div className="grid content-start gap-2">
+						<p className="text-sm text-muted-foreground" aria-live="polite">
+							{value.length === 1 ? "1 day" : `${value.length} days`}
+						</p>
+						<ul className="flex flex-wrap gap-1.5" aria-label="Chosen dates">
+							{dateRuns(value).map(([from, to]) => (
+								<li key={from}>
+									<button
+										type="button"
+										onClick={() => onChange(value.filter((x) => x < from || x > to))}
+										className="inline-flex h-8 items-center gap-1 rounded-full bg-secondary pr-2 pl-3 text-sm text-secondary-foreground tabular-nums hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+										aria-label={`Remove ${formatRun(from, to, true)}`}
+									>
+										{formatRun(from, to)}
+										<XIcon className="size-3.5" />
+									</button>
+								</li>
+							))}
+						</ul>
+					</div>
 				) : null}
 			</div>
 			{error && (
@@ -63,6 +68,28 @@ export function DatesField({
 			)}
 		</fieldset>
 	);
+}
+
+/** Sorted dates grouped into runs of consecutive days: [[first, last], ...]. */
+export function dateRuns(dates: readonly IsoDate[]): [IsoDate, IsoDate][] {
+	const runs: [IsoDate, IsoDate][] = [];
+	for (const d of [...new Set(dates)].sort()) {
+		const last = runs.at(-1);
+		if (last && addDays(last[1], 1) === d) last[1] = d;
+		else runs.push([d, d]);
+	}
+	return runs;
+}
+
+/** "Thu 3 Dec" for one day, "2–6 Nov" for a run, "30 Nov – 2 Dec" across months. */
+export function formatRun(from: IsoDate, to: IsoDate, year = false): string {
+	if (from === to) return formatIsoDate(from, { year });
+	const fmt = (iso: IsoDate, o: Intl.DateTimeFormatOptions) =>
+		new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...o }).format(new Date(`${iso}T12:00:00Z`));
+	const y = year ? { year: "numeric" as const } : {};
+	if (from.slice(0, 7) === to.slice(0, 7)) return `${fmt(from, { day: "numeric" })}–${fmt(to, { day: "numeric", month: "short", ...y })}`;
+	const sameYear = from.slice(0, 4) === to.slice(0, 4);
+	return `${fmt(from, { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) })} – ${fmt(to, { day: "numeric", month: "short", ...(sameYear ? y : { year: "numeric" }) })}`;
 }
 
 // ---- Daily window
