@@ -5,7 +5,7 @@ export function PrivacyPage() {
 	useDocumentTitle("Privacy · sowhen");
 	return (
 		<PageShell>
-			<article className="grid max-w-2xl gap-6 pt-6 pb-4 leading-relaxed">
+			<article className="mx-auto grid w-full max-w-3xl gap-6 pt-6 pb-4 leading-relaxed">
 				<header className="grid gap-2">
 					<h1 className="text-3xl font-semibold tracking-tight">Privacy</h1>
 					<p className="text-lg text-muted-foreground">Short version: sowhen keeps as little as it can, for as short as it can.</p>
